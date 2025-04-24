@@ -1,0 +1,1179 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+    <title>YEAR</title>
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+ 
+        <!-- Side Panel with Filters for the Chart -->
+      
+        <div class="row">
+            <div class="col-md-1">
+                <div class="card shadow p-3 fixed-filter">
+                    <form method="get" action="" id="chart-filter-form">
+                    <h5> WBS</h5>
+                            
+                            
+                                {% for wbs in unique_wbs %}
+                                <div class="pe-3"><input type="radio" name="chart_wbs_name" value="{{ wbs }}" 
+                                    {% if wbs == selected_wbs_chart %}checked{% endif %} onchange="document.getElementById('chart-filter-form').submit();"> 
+                                <label for="chart_wbs_{{ forloop.counter }}">{{ wbs }}</label></div>
+                                {% endfor %}
+                                <hr>
+                                <h5>Year</h5>
+                            
+                            
+                                {% for year in unique_years %}
+                                <input type="radio" name="chart_years" id="chart_year_{{ forloop.counter }}" value="{{ year.year }}" 
+                                {% if selected_years_chart and year.year|stringformat:"s" in selected_years_chart %}checked{% endif %}
+                                onchange="document.getElementById('chart-filter-form').submit();">
+                                <label for="chart_year_{{ forloop.counter }}">{{ year.year }}</label>
+                            
+
+{% endfor %}
+                </div>
+                            
+                            
+            </div>
+            <div class="col-md-11   ">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card text-center h-100 shadow">
+                            <h6 class="card-title fw-bolder py-2">Lot Turns</h6>
+                            <div class="card-body py-0">
+                                <table class="table table-bordered mb-0">
+                                    <thead class="bg-p text-white">
+                                        <tr>
+                                            <th>Year</th>
+                                            {% for wbs in unique_wbs %}
+                                                <th>{{ wbs }}</th>  <!-- Display WBS names -->
+                                            {% endfor %}
+                                            <th>Total Lot Turns</th>  <!-- Display year total -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for year in unique_years %}
+                                        <tr>
+                                            <td class="bg-s">{{ year.year }}</td>  <!-- Display year -->
+                                            {% for wbs in unique_wbs %}
+                                                <!-- Convert year to string in case dictionary keys are strings -->
+                                                <td>{{ lot_turns_by_wbs_and_year|get_item:year.year|get_item:wbs|floatformat:2  }}</td>  
+                                                <!-- Display lot turns for each WBS in this year -->
+                                            {% endfor %}
+                                            <td>{{ year_totals|get_item:year.year|stringformat:"s" |floatformat:2  }}</td>  <!-- Show total lot_turns for the year -->
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td>Total</td>
+                                            {% for wbs in unique_wbs %}
+                                                <td>{{ wbs_totals|get_item:wbs|default:0|floatformat:2  }}</td>  <!-- Show total lot_turns for each WBS across all years -->
+                                            {% endfor %}
+                                            <td>{{ grand_total|default:"0"|floatformat:2  }}</td>  <!-- Grand total -->
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 ">
+                        <div class="card text-center h-100 shadow">
+                            <h6 class="card-title fw-bolder py-2">EUV3400 in Hr's</h6>
+                            <div class="card-body py-0">
+                                <table class="table table-bordered mb-0">
+                                    <thead class="bg-p text-white">
+                                        <tr>
+                                            <th>Year</th>
+                                            {% for wbs in unique_wbs %}
+                                                <th>{{ wbs }}</th>  <!-- Display WBS names -->
+                                            {% endfor %}
+                                            <th>Total EUV3400</th>  <!-- Display year total -->
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for year in unique_years %}
+                                        <tr>
+                                            <td class="bg-s">{{ year.year }}</td>  <!-- Display year -->
+                                            {% for wbs in unique_wbs %}
+                                                <!-- Convert year to string in case dictionary keys are strings -->
+                                                <td>{{ EUV_3400_by_wbs_and_year|get_item:year.year|get_item:wbs|floatformat:2 }}</td>  
+                                                <!-- Display lot turns for each WBS in this year -->
+                                            {% endfor %}
+                                            <td>{{ year_totals2|get_item:year.year|stringformat:"s"|floatformat:2 }}</td>  <!-- Show total lot_turns for the year -->
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td>Total</td>
+                                            {% for wbs in unique_wbs %}
+                                                <td>{{ wbs_totals2|get_item:wbs|default:0|floatformat:2 }}</td>  <!-- Show total lot_turns for each WBS across all years -->
+                                            {% endfor %}
+                                            <td>{{ grand_total2|default:"0"|floatformat:2 }}</td>  <!-- Grand total -->
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center h-100 shadow">
+                            <h6 class="card-title fw-bolder py-2">EXE_5000 (in Hours)</h6>
+                            <div class="card-body py-0">
+                                <table class="table table-bordered mb-0">
+                                    <thead class="bg-p text-white">
+                                        <tr>
+                                            <th>Year</th>
+                                            {% for wbs in unique_wbs %}
+                                                <th>{{ wbs }}</th>
+                                            {% endfor %}
+                                            <th>Total EXE_5000</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for year in unique_years %}
+                                        <tr>
+                                            <td class="bg-s">{{ year.year }}</td>
+                                            {% for wbs in unique_wbs %}
+                                                <td>
+                                                    {{ EXE_5000_by_wbs_and_year|get_item:year.year|get_item:wbs|default:0|floatformat:2 }}
+                                                </td>
+                                            {% endfor %}
+                                            <td>{{ year_totals3|get_item:year.year|stringformat:"s"|default:0|floatformat:2 }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td>Total</td>
+                                            {% for wbs in unique_wbs %}
+                                                <td>{{ wbs_totals3|get_item:wbs|default:0|floatformat:2 }}</td>
+                                            {% endfor %}
+                                            <td>{{ grand_total3|default:"0"|floatformat:2 }}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 pt-3">
+                        <div class="card h-100 shadow">
+                            <div class="card-title"></div>
+                            <div class="card-body">
+                                
+                                <div id="waterchart"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8 pt-3">
+                        <div class="card shadow h-100" >
+                            <div class="card-title"></div>
+                            <div class="card-body pb-0 ">
+                                <div id="chart"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 pt-3">
+                        <div class="card h-100 shadow">
+                            <div class="card-title"></div>
+                            <div class="card-body pb-0">
+                                <div id="factory-bu-lotturns-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-8 pt-3">
+                        <div class="card h-100 shadow">
+                            <div class="card-title"></div>
+                            <div class="card-body pb-0">
+                                <div id="euv_3400_chart" ></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="col-md-4 pt-3">
+                        <div class="card h-100 shadow">
+                            <div class="card-title"></div>
+                            <div class="card-body pb-0">
+                                
+                                <div id="factory-bu-EUV_3400-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8 pt-3">
+                        <div class="card h-100 shadow">
+                            <div class="card-title"></div>
+                            <div class="card-body pb-0">
+                                <div id="exe5000budget"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 pt-3">
+
+                        <div class="card h-100 shadow">
+                            <div class="card-body pb-0">
+                                <div id="factory-bu-EXE_5000-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                    
+                    
+                    
+                </div>
+            </div>
+        </div>
+        <!-- Main Content: Table -->
+ 
+          
+        
+            <!-- Render the chart only if WBS and Years are selected -->
+            
+            
+            
+            
+            
+            
+            
+            
+            {% if months and cumulative_data %}
+            <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+            <script>
+                
+                var options = {
+                    series: [
+                    {
+                        name: "Cumulative Lot Turns budget",
+                        data: {{ blue_line_values|safe }} || []
+                    },
+                    {
+                        name: 'Cumulative Lot Turns',
+                        data: {{ cumulative_data|safe }}
+                    }
+                    ],
+                    chart: {
+                    
+                    type: 'line',
+                    height:400,
+                    parentHeightOffset: 0,
+                    dropShadow: {
+                        enabled: true,
+                        color: '#000',
+                        top: 18,
+                        left: 7,
+                        blur: 10,
+                        opacity: 0.2
+                    },
+                    zoom: {
+                        enabled: false
+                    },
+                    toolbar: {
+                        show: false
+                    }
+                    },
+                    colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                    
+                    stroke: {
+            width: [1, 3], // Line thickness
+            curve: "straight",
+            dashArray: [5, 0] // Dashed for budget, solid for actual
+        },
+        grid: {
+            borderColor: '#e7e7e7',
+            row: {
+                colors: ['#fafafa', 'transparent'], // takes an array which will be repeated on columns
+                opacity: 0.5
+            },
+            padding:{
+                bottom:0
+            }
+
+            },
+            markers: {
+                size: [1,3],  // Adjust size for visibility
+                colors: ["#00a9e0", "#da1884"],  // Change to your preferred colors
+                  // Outline color
+                strokeWidth: 1,  // Thickness of the outline
+                hover: {
+                    size:5  // Increase size on hover
+                }
+            },
+                    title: {
+                    text: 'Cumulative Lot Turns',
+                    align: 'left'
+                    },
+                    
+                    xaxis: {
+                    categories: {{ months|safe }},
+                    tickPlacement: 'between',
+                    
+                    title: {
+                        text: 'Month'
+                    
+                    }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (val) {
+                                return parseFloat(val).toFixed(2);
+                            }
+                        }
+                    },
+                    yaxis: {
+                    title: {
+                        text: 'Lot Turns'
+                    },
+                    labels: {
+                        formatter: function (val) {
+                            return val.toFixed(0);
+                        }
+                    }
+                    
+                    },
+                    legend: {
+                    position: 'top',
+                    horizontalAlign: 'right',
+                    floating: true
+                    
+                    }
+                    };
+
+                    var chart = new ApexCharts(document.querySelector("#chart"), options);
+                    chart.render();
+            </script>
+            <script>
+                var options = {
+                    series: [
+                        {
+                            name: "Cumulative EXE_5000 Budget",
+                            data: {{ blue_line_values3|safe }} || []
+                        },
+                        {
+                            name: "Cumulative EXE_5000",
+                            data: {{ cumulative_data3|safe }} || []
+                        }
+                    ],
+                    chart: {
+                        type: 'line',
+                        height: 400,
+                        parentHeightOffset: 0,
+                        dropShadow: {
+                            enabled: true,
+                            color: '#000',
+                            top: 18,
+                            left: 7,
+                            blur: 10,
+                            opacity: 0.2
+                        },
+                        zoom: {
+                            enabled: false
+                        },
+                        toolbar: {
+                            show: false
+                        }
+                    },
+                    colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                    stroke: {
+                        width: [1, 3],
+                        curve: "straight",
+                        dashArray: [5, 0]
+                    },
+                    grid: {
+                        borderColor: '#e7e7e7',
+                        row: {
+                            colors: ['#fafafa', 'transparent'],
+                            opacity: 0.5
+                        },
+                        padding:{
+                            bottom:0
+                        }
+                    },
+                    markers: {
+                        size: [1, 3],
+                        colors: ["#00a9e0", "#da1884"],
+                        strokeWidth: 1,
+                        hover: {
+                            size: 5
+                        }
+                    },
+                    title: {
+                        text: 'Cumulative EXE_5000 Usage',
+                        align: 'left'
+                    },
+                    xaxis: {
+                        categories: {{ months|safe }},
+                        tickPlacement: 'between',
+                        title: {
+                            text: 'Month'
+                        }
+                    },
+                    yaxis: {
+                        title: {
+                            text: 'EXE_5000 Hours'
+                        },
+                        labels: {
+                        formatter: function (val) {
+                            return val.toFixed(0);
+                        }
+                    }
+                    },
+                    legend: {
+                        position: 'top',
+                        horizontalAlign: 'right',
+                        floating: true,
+                        offsetY: 25,
+                        offsetX: 5
+                    }
+                };
+            
+                var exe5000Chart = new ApexCharts(document.querySelector("#exe5000budget"), options);
+                exe5000Chart.render();
+            </script>
+            
+            <script>
+                var exe500_chart_data = {{ chart_data1 | safe }};
+            
+                var factories = [];
+                var buCategories = [];
+                var series = {};
+            
+                for (var factory in exe500_chart_data) {
+                    if (!factories.includes(factory)) {
+                        factories.push(factory);
+                    }
+            
+                    for (var bu in exe500_chart_data[factory]) {
+                        var category =  bu;
+                        buCategories.push(category);
+            
+                        for (var wbs in exe500_chart_data[factory][bu]) {
+                            if (!series[wbs]) {
+                                series[wbs] = [];
+                            }
+            
+                            buCategories.forEach((cat, idx) => {
+                                if (series[wbs].length <= idx) {
+                                    series[wbs].push(0);
+                                }
+                            });
+            
+                            series[wbs][buCategories.indexOf(category)] = exe500_chart_data[factory][bu][wbs];
+                        }
+                    }
+                }
+            
+                var seriesData = [];
+                for (var wbs in series) {
+                    seriesData.push({
+                        name: wbs,
+                        data: series[wbs]
+                    });
+                }
+            
+                var options = {
+                    series: seriesData,
+                    chart: {
+                        type: 'bar',
+                        height: 400,
+                        parentHeightOffset: 0,
+                        stacked: true
+                    },
+                    grid:{
+                        padding:{
+                            bottom:0
+                        }
+                    },
+                    colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            columnWidth: '80%',
+                            dataLabels: { position: 'top' }
+                        }
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        style: {
+                            fontSize: '12px',
+                            colors: ["#000"]
+                        },
+                        offsetY: -20,
+                        formatter: val => val.toFixed(2)
+                    },
+                    xaxis: {
+                        categories: buCategories,
+                        labels: { rotate: -45 },
+                        title: { text: 'Factory and BU' },
+                        group: {
+                            style: { fontSize: '12px', fontWeight: 600 },
+                            groups: factories.map(factory => ({
+                                title: factory,
+                                cols: Object.keys(exe500_chart_data[factory]).length
+                            }))
+                        }
+                    },
+                    yaxis: {
+                        title: { text: 'EXE_5000 (Hours)' },
+                        labels: {
+                        formatter: function (val) {
+                            return val.toFixed(0);
+                        }
+                    }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: val => val.toFixed(2) + ' hrs'
+                        }
+                    },
+                    title: {
+                        text: 'EXE_5000 Usage by Factory and BU',
+                        align: 'center'
+                    },
+                    legend: {
+                        position: 'top',
+                        horizontalAlign: 'center'
+                    }
+                };
+            
+                var chart = new ApexCharts(document.querySelector("#factory-bu-EXE_5000-chart"), options);
+                chart.render();
+            </script>
+            
+            <script>
+                var chartData = {{ chart_data | safe }};
+            
+                var factories = [];
+                var buCategories = [];
+                var series = {};
+            
+                // Collect all Factory names and corresponding BU names
+                for (var factory in chartData) {
+                    if (!factories.includes(factory)) {
+                        factories.push(factory);
+                    }
+            
+                    for (var bu in chartData[factory]) {
+                        var category = bu;
+                        buCategories.push(category);
+            
+                        for (var wbs in chartData[factory][bu]) {
+                            if (!series[wbs]) {
+                                series[wbs] = [];
+                            }
+            
+                            // Fill missing data with 0
+                            buCategories.forEach((cat, idx) => {
+                                if (series[wbs].length <= idx) {
+                                    series[wbs].push(0);
+                                }
+                            });
+            
+                            // Add data for the current category
+                            series[wbs][buCategories.indexOf(category)] = chartData[factory][bu][wbs];
+                        }
+                    }
+                }
+            
+                // Convert series object to ApexCharts format
+                var seriesData = [];
+                for (var wbs in series) {
+                    seriesData.push({
+                        name: wbs,
+                        data: series[wbs]
+                    });
+                }
+            
+                // Configure and render the chart
+                var options = {
+                    series: seriesData,
+                    chart: {
+                        type: 'bar',
+                        height: 400,
+                        parentHeightOffset: 0,
+                        stacked: true
+                    },
+                    colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            columnWidth: '80%',
+                            dataLabels: {
+                                position: 'top',  // Positions labels at the top of the bars
+                            }
+                        }
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        style: {
+                            fontSize: '12px',
+                            colors: ["#000"]  // Ensures labels are visible
+                        },
+                        offsetY: -20,  // Moves labels further up
+                        formatter: function (val) {
+                            return val.toFixed(2); // Keeps two decimal places
+                        }
+                    },
+                    xaxis: {
+                        categories: buCategories, // BU under Factory
+                        labels: {
+                            show: true,
+                            rotate: -45
+                        },
+                        title: {
+                            text: 'Factory and BU'
+                        },
+                        group: {
+                            style: {
+                                fontSize: '12px',
+                                fontWeight: 600
+                            },
+                            groups: factories.map(factory => ({
+                                title: factory,
+                                cols: Object.keys(chartData[factory]).length
+                            }))
+                        }
+                    },
+                    yaxis: {
+                        title: {
+                            text: 'LOT TURNS'
+                        },
+                        labels: {
+                        formatter: function (val) {
+                            return val.toFixed(0);
+                        }
+                    }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (val) {
+                                return val.toFixed(2) + ' lot_turns';
+                            }
+                        }
+                    },
+                    title: {
+                        text: 'Lot Turns Usage by Factory and BU',
+                        align: 'top'
+                    },
+                    legend: {
+                        position: 'top',
+                        horizontalAlign: 'top'
+                    },
+                    grid:{
+                        padding:{
+                            bottom:0
+                        }
+                    }
+                };
+            
+                var chart = new ApexCharts(document.querySelector("#factory-bu-lotturns-chart"), options);
+                chart.render();
+            </script>
+            <script>
+                var chart2_data = {{ chart2_data | safe }};
+            
+                var factories = [];
+                var buCategories = [];
+                var series = {};
+            
+                // Collect all Factory names and corresponding BU names
+                for (var factory in chart2_data) {
+                    if (!factories.includes(factory)) {
+                        factories.push(factory);
+                    }
+            
+                    for (var bu in chart2_data[factory]) {
+                        var category = bu;
+                        buCategories.push(category);
+            
+                        for (var wbs in chart2_data[factory][bu]) {
+                            if (!series[wbs]) {
+                                series[wbs] = [];
+                            }
+            
+                            // Fill missing data with 0
+                            buCategories.forEach((cat, idx) => {
+                                if (series[wbs].length <= idx) {
+                                   chart2_data series[wbs].push(0);
+                                }
+                            });
+            
+                            // Add data for the current category
+                            series[wbs][buCategories.indexOf(category)] = chart2_data[factory][bu][wbs];
+                        }
+                    }
+                }
+            
+                // Convert series object to ApexCharts format
+                var seriesData = [];
+                for (var wbs in series) {
+                    seriesData.push({
+                        name: wbs,
+                        data: series[wbs]
+                    });
+                }
+            
+                // Configure and render the chart
+                var options = {
+                    series: seriesData,
+                    chart: {
+                        type: 'bar',
+                        height: 400,
+                        parentHeightOffset: 0,
+                        stacked: true
+                    },
+                    colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            columnWidth: '80%',
+                            dataLabels: {
+                                position: 'top',  // Positions labels at the top of the bars
+                            }
+                        }
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        style: {
+                            fontSize: '12px',
+                            colors: ["#000"]  // Ensures labels are visible
+                        },
+                        offsetY: -20,  // Moves labels further up
+                        formatter: function (val) {
+                            return val.toFixed(2); // Keeps two decimal places
+                        }
+                    },
+                    xaxis: {
+                        categories: buCategories, // BU under Factory
+                        labels: {
+                            show: true,
+                            rotate: -45
+                        },
+                        title: {
+                            text: 'Factory and BU'
+                        },
+                        group: {
+                            style: {
+                                fontSize: '12px',
+                                fontWeight: 600
+                            },
+                            groups: factories.map(factory => ({
+                                title: factory,
+                                cols: Object.keys(chartData[factory]).length
+                            }))
+                        }
+                    },
+                    yaxis: {
+                        title: {
+                            text: 'LOT TURNS'
+                        },
+                        labels: {
+                        formatter: function (val) {
+                            return val.toFixed(0);
+                        }
+                    }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (val) {
+                                return val.toFixed(2) + ' lot_turns';
+                            }
+                        }
+                    },
+                    title: {
+                        text: 'Lot Turns Usage by Factory and BU',
+                        align: 'top'
+                    },
+                    legend: {
+                        position: 'top',
+                        horizontalAlign: 'top'
+                    },
+                    grid:{
+                        padding:{
+                            bottom:0
+                        }
+                    }
+                };
+            
+                var chart = new ApexCharts(document.querySelector("#factory-bu-lotturns-chart"), options);
+                chart.render();
+            </script>
+            <script>
+                var trendData = {{ blue_line_values1|safe }} || [];
+                var usageData = {{ cumulative_data1|safe }} || [];
+                var monthsData = {{ months|safe }} || [];
+
+               
+                var options = {
+                    series: [   
+                    {
+                        name: "Trend",
+                        data: trendData
+                    },
+                    {
+                        name: 'Usage',
+                        data: usageData
+                    }
+                    ],
+                    chart: {
+                    
+                    type: 'line',
+                    height:500,
+                    parentHeightOffset: 0,
+                    dropShadow: {
+                        enabled: true,
+                        color: '#000',
+                        top: 18,
+                        left: 7,
+                        blur: 10,
+                        opacity: 0.2
+                    },
+                    zoom: {
+                        enabled: false
+                    },
+                    toolbar: {
+                        show: false
+                    }
+                    
+                    },
+                    
+                    colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                    
+                    stroke: {
+            width: [1, 3], // Line thickness
+            curve: "straight",
+            dashArray: [5, 0] // Dashed for budget, solid for actual
+        },
+        grid: {
+            borderColor: '#e7e7e7',
+            row: {
+                colors: ['#fafafa', 'transparent'], // takes an array which will be repeated on columns
+                opacity: 0.5
+            },
+            padding:{
+                bottom:0
+            }
+            },
+            markers: {
+                size: [1,3],  // Adjust size for visibility
+                colors: ["#00a9e0", "#da1884"],  // Change to your preferred colors
+                  // Outline color
+                strokeWidth: 1,  // Thickness of the outline
+                hover: {
+                    size:5  // Increase size on hover
+                }
+            },
+                    title: {
+                    text: 'Wafer Consumption Usage verses Trend',
+                    align: 'left'
+                    },
+                    
+                    xaxis: {
+                    categories: monthsData,
+                    tickPlacement: 'between',
+                    title: {
+                        text: 'Month',
+                        style: {
+                            fontSize: '16px',  // Adjust font size if needed
+                            fontWeight: 'bold',
+                            align:'center'
+                        },
+                    },
+                    
+                    labels: {
+                        style: {
+                            fontSize: '14px',  // Adjust font size if needed
+                            
+                            align:'right'
+                        }
+                        
+                    }
+                    
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (val) {
+                                return parseFloat(val).toFixed(2);
+                            }
+                        }
+                    },
+                    
+                    yaxis: {
+                    title: {
+                        text: 'No.of Wafer',
+                        style: {
+                            fontSize: '16px',  // Adjust font size if needed
+                            fontWeight: 'bold',
+                            align:'center'
+                        },
+
+                    },
+                    labels: {
+                        formatter: function (val) {
+                            return val.toFixed(0);
+                        }
+                    }
+                    
+                    },
+                    legend: {
+                    position: 'top',
+                    horizontalAlign: 'right',
+                    floating: true,
+                    offsetY: -25,
+                    offsetX: 50
+                    }
+                    };
+
+                    var chart = new ApexCharts(document.querySelector("#waterchart"), options);
+                    chart.render();
+            </script>
+          
+            <script>
+                var chartData = {{ chart1_data | safe }};
+            
+                var factories = [];
+                var buCategories = [];
+                var series = {};
+            
+                // Collect all Factory names and corresponding BU names
+                for (var factory in chartData) {
+                    if (!factories.includes(factory)) {
+                        factories.push(factory);
+                    }
+            
+                    for (var bu in chartData[factory]) {
+                        var category =  bu;
+                        buCategories.push(category);
+            
+                        for (var wbs in chartData[factory][bu]) {
+                            if (!series[wbs]) {
+                                series[wbs] = [];
+                            }
+            
+                            // Fill missing data with 0
+                            buCategories.forEach((cat, idx) => {
+                                if (series[wbs].length <= idx) {
+                                    series[wbs].push(0);
+                                }
+                            });
+            
+                            // Add data for the current category
+                            series[wbs][buCategories.indexOf(category)] = chartData[factory][bu][wbs];
+                        }
+                    }
+                }
+            
+                // Convert series object to ApexCharts format
+                var seriesData = [];
+                for (var wbs in series) {
+                    seriesData.push({
+                        name: wbs,
+                        data: series[wbs]
+                    });
+                }
+            
+                // Configure and render the chart
+                var options = {
+                    series: seriesData,
+                    chart: {
+                        type: 'bar',
+                        height: 400,
+                        parentHeightOffset: 0,
+                        stacked: true
+                    },
+                    colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            columnWidth: '80%',
+                            dataLabels: {
+                                position: 'top',  // Positions labels at the top of the bars
+                            }
+                        }
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        style: {
+                            fontSize: '12px',
+                            colors: ["#000"]  // Ensures labels are visible
+                        },
+                        offsetY: -20,  // Moves labels further up
+                        formatter: function (val) {
+                            return val.toFixed(2); // Keeps two decimal places
+                        }
+                    },
+                    xaxis: {
+                        categories: buCategories, // BU under Factory
+                        labels: {
+                            show: true,
+                            rotate: -45
+                        },
+                        
+                        title: {
+                            text: 'Factory and BU'
+                        },
+                        group: {
+                            style: {
+                                fontSize: '12px',
+                                fontWeight: 600
+                            },
+                            groups: factories.map(factory => ({
+                                title: factory,
+                                cols: Object.keys(chartData[factory]).length
+                            }))
+                        }
+                    },
+                    yaxis: {
+                        title: {
+                            text: 'EUV_3400'
+                        },
+                        labels: {
+                        formatter: function (val) {
+                            return val.toFixed(0);
+                        }
+                    }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (val) {
+                                return val.toFixed(2) + ' EUV_3400';
+                            }
+                        }
+                    },
+                    title: {
+                        text: 'EUV_3400 Usage by Factory and BU',
+                        align: 'center'
+                    },
+                    legend: {
+                        position: 'top',
+                        horizontalAlign: 'center'
+                    },
+                    grid:{
+                        padding:{
+                            bottom:0
+                        }
+                    }
+                };
+            
+                var chart = new ApexCharts(document.querySelector("#factory-bu-EUV_3400-chart"), options);
+                chart.render();
+            </script>
+            
+            
+            <script>
+           
+                var options = {
+                    series: [
+                    {
+                        name: "Cumul_Budget_3400",
+                        data: {{ blue_line_values2|safe }} || []
+                    },
+                    {
+                        name: 'Cumul_Actual_3400',
+                        data: {{ cumulative_data2|safe }}
+                    }
+                    ],
+                    chart: {
+                    
+                    type: 'line',
+                    height:400,
+                    parentHeightOffset: 0,
+                    dropShadow: {
+                        enabled: true,
+                        color: '#000',
+                        top: 18,
+                        left: 7,
+                        blur: 10,
+                        opacity: 0.2
+                    },
+                    zoom: {
+                        enabled: false
+                    },
+                    toolbar: {
+                        show: false
+                    }
+                    },
+                    colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                    
+                    stroke: {
+            width: [1, 3], // Line thickness
+            curve: "straight",
+            dashArray: [5, 0] // Dashed for budget, solid for actual
+        },
+        grid: {
+            borderColor: '#e7e7e7',
+            row: {
+                colors: ['#fafafa', 'transparent'], // takes an array which will be repeated on columns
+                opacity: 0.5
+            },
+            padding:{
+                bottom:0
+            }
+            },
+            markers: {
+                size: [1,3],  // Adjust size for visibility
+                colors: ["#00a9e0", "#da1884"],  // Change to your preferred colors
+                  // Outline color
+                strokeWidth: 1,  // Thickness of the outline
+                hover: {
+                    size:5  // Increase size on hover
+                }
+            },
+                    title: {
+                    text: 'NXE3400 Usage verses Budget',
+                    align: 'left'
+                    },
+                    
+                    xaxis: {
+                    categories: {{ months|safe }},
+                    tickPlacement: 'between',
+                    colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                    
+                    stroke: {
+            width: [1, 3], // Line thickness
+            curve: "straight",
+            dashArray: [5, 0] // Dashed for budget, solid for actual
+        },
+                    title: {
+                        text: 'Month'
+                    }
+                    },
+                    yaxis: {
+                    title: {
+                        text: 'EUV Tool Tim in Hrs'
+                    },
+                    labels: {
+                        formatter: function (val) {
+                            return val.toFixed(0);
+                        }
+                    }
+                    
+                    },
+                    legend: {
+                    position: 'top',
+                    horizontalAlign: 'right',
+                    floating: true,
+                    offset:true,
+                    offsetY: -25,
+                    offsetX: -5
+                    }
+                    };
+
+                    var chart = new ApexCharts(document.querySelector("#euv_3400_chart"), options);
+                    chart.render();
+            </script>
+            {% else %}
+            <p class="mt-4">Please select a valid WBS and Year(s) for the chart.</p>
+            {% endif %}
+        
+        
+    </div>
+</div>
+{% endblock content %}

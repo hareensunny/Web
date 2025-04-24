@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block title %}
+<title>Upload File</title>
+{% endblock title %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+      <div class="border p-3 rounded">
+      <h6 class="mb-0 text-uppercase">Sample Request form</h6>
+        <hr/>
+        <!-- import_excel.html -->
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label for="csv_file">Upload CSV:</label>
+            <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
+            <button type="submit">Upload</button>
+        </form>       
+    </div>
+</div>
+</div>
+
+{% endblock content %}

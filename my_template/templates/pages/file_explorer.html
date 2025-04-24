@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}
+    <title>Contract Status</title>
+{% endblock %}
+
+{% block content %}
+<div class="container ">
+  <h2 class="text-center text-primary mb-4">📁 File Management Portal</h2>
+
+  <!-- Unified Upload + Folder Name Input -->
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-gradient-success text-dark fw-bold">📤 Upload File</div>
+        <div class="card-body">
+          <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Select File</label>
+                <input type="file" class="form-control" name="file" required>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Folder Name</label>
+                <input type="text" name="folder_name" class="form-control" placeholder="Type to select or create a folder" required>
+                <div class="form-text">Existing folders will be used. New names will create folders.</div>
+              </div>
+
+              <div class="col-md-12 text-center">
+                <button type="submit" class="btn btn-success">Upload File</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Folder/File Listing -->
+  <div class="mt-5">
+    <h4 class="mb-4">📚 Your Files</h4>
+    <div class="row g-4">
+      {% for folder in folders %}
+      <div class="col-md-4">
+        <div class="card border shadow-sm h-100">
+          <div class="card-header d-flex justify-content-between align-items-center bg-light">
+            <strong>📁 {{ folder.name }}</strong>
+            <a href="{% url 'delete_folder' folder.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+          </div>
+          <ul class="list-group list-group-flush">
+            {% for file in files %}
+              {% if file.folder.name == folder.name %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{{ file.file.url }}" download class="text-decoration-none">📄 {{ file.filename }}</a>
+                <a href="{% url 'delete_file' file.id %}" class="btn btn-sm btn-outline-danger">🗑</a>
+              </li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

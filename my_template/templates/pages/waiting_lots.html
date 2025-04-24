@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block title %}
+<title>Waiting Lot Details</title>
+{% endblock title %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+    <h4 class="fw-bold text-primary">Waiting Lots</h4>
+    <button class="btn btn-outline-secondary" id="reset-filters">Reset Filters</button>
+</div>
+
+<!-- Factory Dashboard Cards -->
+<div class="d-flex flex-wrap gap-3 mb-4" id="factory-cards">
+    {% for factory in factories %}
+        <div class="card shadow-sm factory-card" data-factory="{{ factory.name }}" style="min-width: 100px; cursor: pointer;">
+            <div class="card-body text-center py-3">
+                <h5 class="mb-1 text-primary">{{ factory.count }}</h5>
+                <span class="text-muted text-uppercase" style="font-size: 14px;">{{ factory.name }}</span>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+<div class="d-flex">
+    <!-- Toggle Button -->
+    <button class="btn btn-primary btn-switcher1 shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
+        <i class="bi bi-columns-gap me-0"></i>
+    </button>
+    
+    <!-- Table -->
+    <div class="table-responsive" style="flex-grow: 1;">
+        <table  class="table table-bordered" style="width:100%">
+            <thead class="bg-p text-white">
+                <tr>
+                    <th >Action</th>
+                    <th class="col-tmplotid">LOT_ID</th>
+                    <th class="col-url">URL</th>
+                    <th class="col-wbs">WBS</th>
+                    <th class="col-projectgroup">Project Group</th>
+                    <th class="col-factory">Factory</th>
+                    <th class="col-bu">BU</th>
+                    <th class="col-department">Department</th>
+                    <th class="col-currentnumber">Short Loop</th>
+                    <th class="col-requestor">Requestor</th>
+                    <th class="col-topic">Topic</th>
+                    <th class="col-specialfocus">Special Focus</th>
+                    <th class="col-name">Name</th>
+                    <th class="col-litho">Litho</th>
+                    <th class="col-reticle">Reticle</th>
+                    <th class="col-integrator">Integrator</th>
+                    
+                    
+                    <th class="col-requesttype">Request Type</th>
+                    <th class="col-estimatedenddate">Estimated End Date</th>
+                    <th class="col-noofsamples">No. of Samples</th>
+                    <!-- <th class="col-photo">Photo</th> -->
+                   
+                    
+                    
+                    
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in form_data %}
+                <tr data-factory="{{ data.factory.name }}">
+                    <td class="bg-s"><a href="{% url 'edit_form_data' data.pk %}">Edit</a></td>
+                    <td class="col-tmplotid">{{ data.tmp_lot_id }}</td>
+                    <td class="col-url">{{data.url}}</td>
+                    <td class="col-wbs">{{ data.wbs.name }}</td>
+                    <td class="col-projectgroup">{{ data.project_group.name }}</td>
+                    <td class="col-factory">{{ data.factory.name }}</td>
+                    <td class="col-bu">{{ data.bu.name }}</td>
+                    <td class="col-department">{{ data.department.name }}</td>
+                    <td class="col-currentnumber">{{ data.current_number }}</td>
+                    <td class="col-requestor">{{ data.requestor.name }}</td>
+                    <td class="col-topic">{{ data.topic }}</td>
+                    <td class="col-specialfocus">{{ data.special_focus }}</td>
+                    <td class="col-name">{{ data.project_factory_date_code }}</td>
+                    <td class="col-litho">{{ data.litho.name }}</td>
+                    <td class="col-reticle">{{ data.reticle.name }}</td>
+                    <td class="col-integrator">{{ data.integrator.name }}</td>
+                    <td class="col-requesttype">{{ data.request_type.name }}</td>
+                    <td class="col-estimatedenddate">{{ data.estimated_end_date }}</td>
+                    <td class="col-noofsamples">{{ data.no_of_samples }}</td>
+                    <!-- <td class="col-photo"><img src="{{ data.photo.name.url }}" alt="" width="50" height="50"></td> -->
+                    
+                    
+                    
+                    
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+</div>
+<!-- Sidebar Offcanvas -->
+<div class="offcanvas offcanvas-end shadow border-start-0 p-2" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Toggle Columns</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-wbs" checked>
+            <label class="form-check-label" for="toggle-wbs">WBS</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-factory" checked>
+            <label class="form-check-label" for="toggle-factory">Factory</label>
+        </div>
+        <!-- Add more checkboxes for other columns -->
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-bu" checked>
+            <label class="form-check-label" for="toggle-bu">BU</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-department" checked>
+            <label class="form-check-label" for="toggle-department">Department</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-projectgroup" checked>
+            <label class="form-check-label" for="toggle-projectgroup">Project Group</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-requestor" checked>
+            <label class="form-check-label" for="toggle-requestor">Requestor</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-litho" >
+            <label class="form-check-label" for="toggle-litho">Litho</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-reticle" >
+            <label class="form-check-label" for="toggle-reticle">Reticle</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-integrator" >
+            <label class="form-check-label" for="toggle-integrator">Integrator</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-topic" checked>
+            <label class="form-check-label" for="toggle-topic">Topic</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-specialfocus" checked>
+            <label class="form-check-label" for="toggle-specialfocus">Special Focus</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-requesttype">
+            <label class="form-check-label" for="toggle-requesttype">Request Type</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-estimatedenddate">
+            <label class="form-check-label" for="toggle-estimatedenddate">Estimated End Date</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-noofsamples">
+            <label class="form-check-label" for="toggle-noofsamples">No.of Samples</label>
+        </div>
+        
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-currentnumber" checked>
+            <label class="form-check-label" for="toggle-currentnumber">Short Loop</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-name" checked>
+            <label class="form-check-label" for="toggle-name">Name</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="toggle-tmplotid" checked>
+            <label class="form-check-label" for="toggle-tmplotid">Lot_Id</label>
+        </div>
+        <!-- Add more checkboxes for other columns -->
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Iterate over each checkbox
+        document.querySelectorAll('.form-check-input').forEach(function(checkbox) {
+            // Define the column class based on the checkbox's id
+            const colClass = '.col-' + checkbox.id.split('-')[1];
+            
+            // Set the initial visibility based on whether the checkbox is checked
+            document.querySelectorAll(colClass).forEach(function(col) {
+                col.style.display = checkbox.checked ? '' : 'none';
+            });
+            
+            // Add an event listener to toggle visibility on change
+            checkbox.addEventListener('change', function() {
+                document.querySelectorAll(colClass).forEach(function(col) {
+                    col.style.display = checkbox.checked ? '' : 'none';
+                });
+            });
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const cards = document.querySelectorAll(".factory-card");
+        const rows = document.querySelectorAll("tbody tr");
+        const resetBtn = document.getElementById("reset-filters");
+    
+        cards.forEach(card => {
+            card.addEventListener("click", function () {
+                const selectedFactory = card.getAttribute("data-factory");
+                rows.forEach(row => {
+                    row.style.display = (row.getAttribute("data-factory") === selectedFactory) ? "" : "none";
+                });
+            });
+        });
+    
+        resetBtn.addEventListener("click", function () {
+            rows.forEach(row => row.style.display = "");
+        });
+    });
+    </script>
+    
+
+{% endblock content %}

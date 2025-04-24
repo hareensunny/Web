@@ -1,0 +1,49 @@
+  {% load custom_filters %}
+  
+  {% for category, category_data in summary_data.items %}
+  <div class="card shadow mt-4">
+    <div class="card-body">
+      <h5 class="text-center text-primary">{{ category|title }} Budget and Usage</h5>
+
+      <div class="table-responsive">
+        <table class="table table-bordered text-center">
+          <thead class="bg-p" >
+            <tr class="bg-p text-white">
+              <th class="sticky-left-1 bg-p" rowspan="2">Order Segment</th>
+              <th class="sticky-left-2 bg-p" rowspan="2">Total Budget</th>
+              <th colspan="{{ jpnfy_years|length }}" >Consumed</th>
+              <th class="sticky-right bg-danger" rowspan="2">Remaining</th>
+            </tr>
+            <tr class="bg-p text-white">
+              {% for year in jpnfy_years %}
+                <th>{{ year }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for wbs, data in category_data.items %}
+            <tr class="bg-p text-dark ct4">
+              <td class="bg-p sticky-left-1 "><strong> {{ wbs }}</strong></td>
+              <td class="sticky-left-2 bg-p" ><strong>{{ data.budget|floatformat:2 }}</strong></td>
+              {% for year in jpnfy_years %}
+              <td ><strong>{{ data.consumed_by_year|get_dict_value:year|default:"0.00"|floatformat:2 }}</strong></td>
+              {% endfor %}
+              <td class="bg-danger text-white sticky-right"><strong>{{ data.remaining|floatformat:2 }}</strong></td>
+          </tr>
+              {% for row in data.table_data %}
+              <tr>
+                <td class="sticky-left-1 bg-s">{{ row.order_segment }}</td>
+                <td class="sticky-left-2 bg-s ">    {{ row.total_budget|floatformat:2 }}</td>
+                {% for year in jpnfy_years %}
+                  <td >{{ row.years_data|get_dict_value:year|default:"0.00"|floatformat:2 }}</td>
+                {% endfor %}
+                <td  class="sticky-right bg-danger text-white"><strong>{{ row.remaining|floatformat:2 }}</strong></td>
+              </tr>
+              {% endfor %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endfor %}

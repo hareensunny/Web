@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}
+    <title>Contract Status</title>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid ">
+    <div class="d-flex justify-content-center align-items-center ">
+        <h2 class="text-success text-center">Contract Status Overview</h2>
+    </div>
+
+    <div class="card shadow">
+        
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle text-center">
+                    <thead class="bg-p text-dark">
+                        <tr >
+                            <th>📁 Contract</th>
+                            <th>📌 Status</th>
+                            <th>📅 Effective Date</th>
+                            <th>📅 Termination Date</th>
+                            <th>🔁 Lot Turns</th>
+                            <th>⚡ EUV3400</th>
+                            <th>⚙️ EXE5000</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contract in contract_data %}
+                        <tr class="{% if contract.status == 'Active' %}table-success{% elif contract.status == 'Terminated' %}table-danger{% else %}table-warning{% endif %}">
+                            <td class="bg-s sticky-left-1"><strong>{{ contract.contract }}</strong></td>
+                            <td>{{ contract.status }}</td>
+                            <td>{{ contract.effective_date }}</td>
+                            <td>{{ contract.termination_date }}</td>
+                            <td>{{ contract.lot_turns }}</td>
+                            <td>{{ contract.euv3400 }}</td>
+                            <td>{{ contract.exe5000 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

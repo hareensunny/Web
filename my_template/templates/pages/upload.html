@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block title %}
+<title>Upload File</title>
+{% endblock title %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+      <div class="border p-3 rounded">
+      <h6 class="mb-0 text-uppercase">Sample Request form</h6>
+        <hr/>
+        <!-- import_excel.html -->
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="excel_file">
+    <button type="submit">Upload and Update</button>
+</form>
+
+{% if extracted_data %}
+    <h2>Extracted Data</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>tmp_lot_id</th>
+                <th>lot_turns</th>
+                <th>EUV_3300</th>
+                <th>EUV_3400</th>
+                <th>jpn_ytd</th>
+                <th>year</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in extracted_data %}
+                <tr>
+                    <td>{{ data.tmp_lot_id }}</td>
+                    <td>{{ data.lot_turns }}</td>
+                    <td>{{ data.EUV_3300 }}</td>
+                    <td>{{ data.EUV_3400 }}</td>
+                    <td>{{ data.jpn_ytd }}</td>
+                    <td>{{ data.year }}</td>
+                    <td>{{ data.status }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
+
+    
+        
+    </div>
+</div>
+</div>
+
+{% endblock content %}

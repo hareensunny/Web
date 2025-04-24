@@ -1,0 +1,48 @@
+{% load custom_filters %}
+
+{% for metric in metrics %}
+  <div class="card shadow mt-3">
+    <div class="card-body">
+      <h5 class="text-center text-primary text-uppercase">{{ metric|title|cut:"_" }} by Department</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered text-center es-table">
+          <thead>
+            <tr>
+              <th class="bg-p text-white sticky-left-1">Month</th>
+              {% for dept in departments %}
+                <th class="bg-p">{{ dept }}</th>
+              {% endfor %}
+              <th class="bg-danger text-white sticky-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for month, values in table_data.items %}
+              <tr>
+                <td class="sticky-left-1 bg-s">{{ month }}</td>
+                {% for dept in departments %}
+                  <td>{{ values|get_dict_value:dept|get_dict_value:metric|default:0.00|floatformat:2 }}</td>
+                {% endfor %}
+                <td class="sticky-right bg-danger">
+                  <strong>{{ month_totals|get_dict_value:month|get_dict_value:metric|floatformat:2 }}</strong>
+                </td>
+              </tr>
+            {% endfor %}
+            <tr class="bg-light">
+              <td class="sticky-left-1 bg-s"><strong>Total</strong></td>
+              {% for dept in departments %}
+                <td >
+                  <strong>{{ department_totals|get_dict_value:dept|get_dict_value:metric|floatformat:2 }}</strong>
+                </td>
+              {% endfor %}
+              <td class="sticky-right bg-danger text-white">
+                <strong>{{ grand_total|get_dict_value:metric|floatformat:2 }}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+
+

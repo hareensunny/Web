@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block title %}
+<title>Edit Completed Lot</title>
+{% endblock title %}
+
+{% block content %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<script>
+    function updateImagePreview(selectElement) {
+        var selectedOption = selectElement.options[selectElement.selectedIndex];
+        var imageUrl = selectedOption.getAttribute('data-url');
+        var previewImg = document.getElementById('preview-img');
+        
+        if (imageUrl) {
+            previewImg.src = imageUrl;
+            previewImg.style.display = 'block';
+        } else {
+            previewImg.style.display = 'none';
+        }
+    }
+</script>
+<div class="card">
+    <div class="card-body">
+        <div class="border p-3 rounded">
+            <h6 class="mb-0 text-uppercase">Edit Completed Lot</h6>
+            <hr/>
+            <form class="row g-3" method="post" action="{% url 'edit_form_data' form_data.pk %}">
+                {% csrf_token %}
+                <div class="col-4">
+                    <label class="form-label" for="wbs">WBS</label>
+                    <input type="text" id="wbs" name="wbs" class="form-control mb-2" value="{{ form_data.wbs.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="factory">Factory</label>
+                    <input type="text" id="factory" name="factory" class="form-control mb-2" value="{{ form_data.factory.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="bu">BU</label>
+                    <input type="text" id="bu" name="bu" class="form-control mb-2" value="{{ form_data.bu.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="department">Department</label>
+                    <input type="text" id="department" name="department" class="form-control mb-2" value="{{ form_data.department.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="project_group">Project Group</label>
+                    <input type="text" id="project_group" name="project_group" class="form-control mb-2" value="{{ form_data.project_group.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="requestor">Requestor</label>
+                    <input type="text" id="requestor" name="requestor" class="form-control mb-2" value="{{ form_data.requestor.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="litho">Litho</label>
+                    <input type="text" id="litho" name="litho" class="form-control mb-2" value="{{ form_data.litho.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="reticle">Reticle</label>
+                    <input type="text" id="reticle" name="reticle" class="form-control mb-2" value="{{ form_data.reticle.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="integrator">Integrator</label>
+                    <input type="text" id="integrator" name="integrator" class="form-control mb-2" value="{{ form_data.integrator.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="topic">Topic</label>
+                    <input type="text" name="topic" id="topic" class="form-control mb-2" value="{{ form_data.topic }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="special_focus">Special Focus</label>
+                    <input type="text" name="special_focus" id="special_focus" class="form-control mb-2" value="{{ form_data.special_focus }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="request_type">Request Type</label>
+                    <input type="text" id="request_type" name="request_type" class="form-control mb-2" value="{{ form_data.request_type.name }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="estimated_end_date">Estimated End Date</label>
+                    <input type="date" id="estimated_end_date" class="form-control mb-2" name="estimated_end_date" value="{{ form_data.estimated_end_date }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="no_of_samples">No. of Samples</label>
+                    <input type="number" id="no_of_samples" class="form-control mb-2" name="no_of_samples" value="{{ form_data.no_of_samples }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="current_number">Current Number</label>
+                    <input type="text" id="current_number" name="current_number" class="form-control mb-2" value="{{ form_data.current_number }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="project_factory_date_code">Project Factory Date Code</label>
+                    <input type="text" id="project_factory_date_code" name="project_factory_date_code" class="form-control mb-2" value="{{ form_data.project_factory_date_code }}" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="tmp_lot_id">LOT ID</label>
+                    <input type="text" id="tmp_lot_id" name="tmp_lot_id" class="form-control mb-2" value="{{ form_data.tmp_lot_id }}">
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="status">Status</label>
+                    <input type="text" id="status" name="status" class="form-control mb-2" value="Completed" disabled>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="es_number">ES Number</label>
+                    <input type="text" id="es_number" name="es_number" class="form-control mb-2" placeholder="Please Enter ES Number" value="{{ form_data.es_number }}">
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="location">Location</label>
+                    <select id="location" name="location" class="form-control mb-2">
+                        {% for location in locations %}
+                        <option value="{{ location.id }}" {% if location.id == form_data.location_id %}selected{% endif %}>{{ location.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="end_date">End Date</label>
+                    <input type="date" id="end_date" name="end_date" class="form-control mb-2" value="{{ form_data.end_date }}">
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="development">Development</label>
+                    <input type="text" id="development" name="development" class="form-control mb-2" value="{{ form_data.development }}">
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="metrology">Metrology</label>
+                    <input type="text" id="metrology" name="metrology" class="form-control mb-2" value="{{ form_data.metrology }}">
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="duplo">Duplo</label>
+                    <input type="text" id="duplo" name="duplo" class="form-control mb-2" value="{{ form_data.duplo }}">
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="other">Other</label>
+                    <input type="text" id="other" name="other" class="form-control mb-2" value="{{ form_data.other }}">
+                </div>
+                <div class="col-4">
+                    <label class="form-label" for="is_active">Is Active</label>
+                    <input type="checkbox" id="is_active" name="is_active" {% if form_data.is_active %}checked{% endif %}><br>
+                </div>
+                
+                <div class="text-center">
+                    <button class="btn btn-success" type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}

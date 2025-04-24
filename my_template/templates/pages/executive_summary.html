@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    <title>Executive Summary</title>
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="text-center">Executive Summary</h2>
+
+    <!-- Summary Cards -->
+    <div class="row text-center">
+        {% for category, category_data in summary_data.items %}
+        
+            <div class="col-md-4 ct">
+                <div class="card text-white p-2 mb-0 ct2">
+                    <h4 class="text-uppercase">{{ category|title }} Status</h4>
+                </div>
+                <div class="card p-3 shadow ">
+                    
+                    <div class="row mb-2">
+                        {% for wbs, data in category_data.items %}
+                        <div class="col-md-6 text-center">
+                            
+                                <div class=" text-start">
+                                    
+                                        <h5 class="text-center">{{ wbs }}</h5>
+                                    <div class="card-body p-0">
+                                        <div class="border border-1 border-primary bg-grey text-center p-2 rounded-1 mb-2">
+                                            <h6 class="text-danger fs-14">Budget Until Mar-26:</h6>
+                                        <strong class="fs-18">{{ data.budget|floatformat:2 }}</strong>
+                                        </div>
+                                        <div class="border border-1 border-primary bg-grey text-center p-2 rounded-1 mb-2">
+                                            <h6 class="text-success fs-14">Consumed Until Now:</h6>
+                                        <strong class="fs-18">{{ data.consumed|floatformat:2 }}</strong>
+                                        </div>
+                                        <div class="border border-1 border-primary bg-grey text-center p-2 rounded-1 mb-2">
+                                            <h6 class="text-info fs-14">Available Until Mar-26:</h6>
+                                        <strong class="fs-18">{{ data.remaining|floatformat:2 }}</strong>
+                                        </div>
+                                        
+                                        
+                                    </div>
+                                </div>
+                                
+                            
+                        </div>
+                        
+                    {% endfor %}
+                    </div>
+                    
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Tables -->
+    {% for category, category_data in summary_data.items %}
+        <div class="col-md-12">
+            <div class="card shadow mt-2">
+                <div class="card-body">
+                    <h5 class="card-title text-center text-primary text-uppercase">{{ category|title }} Budget and Usage</h5>
+                    
+            <div class="table-responsive">
+                <table  class="table table-bordered es-table nowrap" style="width:100%">
+                    <thead class="bg-p text-white">
+                        <tr>
+                            <th rowspan="2" class="bg-p sticky-left-1" >WBS</th>
+                            <th rowspan="2" class="bg-p sticky-left-2" >Total Budget</th>
+                            <th colspan="{{ jpnfy_years|length }}" >Consumed</th>
+                            
+                            <th rowspan="2" class="bg-danger text-white sticky-right">Remaining</th>
+                        </tr>
+                        <tr>
+                        {% for year in jpnfy_years %}
+                                <th>{{ year }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for wbs, data in category_data.items %}
+                            <!-- WBS Group Header Row -->
+                            
+                            <tr class="bg-p text-dark ct4">
+                                <td class="bg-p sticky-left-1"><strong> {{ wbs }}</strong></td>
+                                <td class="sticky-left-2 bg-p" ><strong>{{ data.budget|floatformat:2 }}</strong></td>
+                                {% for year in jpnfy_years %}
+                                <td><strong>{{ data.consumed_by_year|get_dict_value:year|default:"0.00"|floatformat:2 }}</strong></td>
+                                {% endfor %}
+                                <td class="bg-danger text-white sticky-right"><strong>{{ data.remaining|floatformat:2 }}</strong></td>
+                            </tr>
+                            <!-- Data Rows Under WBS Group -->
+                            {% for row in data.table_data %}
+                            <tr >
+                                <td class="bg-s sticky-left-1" >{{ row.order_segment }}</td>
+                                <td class="bg-s sticky-left-2" >{{ row.total_budget|floatformat:2 }}</td>
+                                {% for year in jpnfy_years %}
+                                    <td>{{ row.years_data|get_dict_value:year|default:"0.00"|floatformat:2 }}</td>
+                                {% endfor %}
+                                <td class="bg-danger text-white sticky-right"><strong>{{ row.remaining|floatformat:2 }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                            <!-- WBS Total Row -->
+                            
+                        {% endfor %}
+                    </tbody>
+                </table>            </div>
+    
+            </div>
+        </div>
+        
+    {% endfor %}
+</div>
+
+
+{% endblock %}

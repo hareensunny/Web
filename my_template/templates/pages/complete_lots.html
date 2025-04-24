@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block title %}
+<title>Completed Lot Details</title>
+{% endblock title %}
+
+{% block content %}
+<div class="d-flex">
+    <!-- Toggle Button -->
+    <button class="btn btn-primary btn-switcher1 shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
+        <i class="bi bi-columns-gap me-0"></i>
+    </button>
+    <div class="table-responsive" style="flex-grow: 1;">
+        <table  class="table  table-bordered" style="width:100%">
+            <thead class="bg-p text-white">
+                <tr>
+                    <th class="col-tmplotid">LOT_ID</th>
+                    <th class="col-url">URL</th>
+                    <th class="col-wbs">WBS</th>
+                    <th class="col-projectgroup">Project Group</th>
+                    <th class="col-factory">Factory</th>
+                    <th class="col-bu">BU</th>
+                    <th class="col-department">Department</th>
+                    <th class="col-currentnumber">Short Loop</th>
+                    <th class="col-requestor">Requestor</th>
+                    <th class="col-topic">Topic</th>
+                    <th class="col-specialfocus">Special Focus</th>
+                    <th class="col-name">Name</th>
+                    <th class="col-litho">Litho</th>
+                    <th class="col-reticle">Reticle</th>
+                    <th class="col-integrator">Integrator</th>      
+                    
+                    <th class="col-requesttype">Request Type</th>
+                    <th class="col-estimatedenddate">Estimated End Date</th>
+                    <th class="col-noofsamples">No. of Samples</th>
+                   
+                    <th class="col-esnumber">ES Number</th>
+                    <th class="col-location">Location</th>
+                    <th class="col-status">Status</th>
+                    <th class="col-enddate">End Date</th>
+                    <th class="col-development">Development</th>
+                    <th class="col-metrology">Metrology</th>
+                    <th class="col-duplo">Duplo</th>
+                    <th class="col-other">Other</th>
+                    
+                </tr>
+            </thead>
+            
+        </table>
+    </div>
+</div>
+    <div class="offcanvas offcanvas-end shadow border-start-0 p-2" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasScrolling">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title" id="offcanvasScrollingLabel">Toggle Columns</h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-wbs" checked>
+                <label class="form-check-label" for="toggle-wbs">WBS</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-factory" checked>
+                <label class="form-check-label" for="toggle-factory">Factory</label>
+            </div>
+            <!-- Add more checkboxes for other columns -->
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-bu" checked>
+                <label class="form-check-label" for="toggle-bu">BU</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-department" checked>
+                <label class="form-check-label" for="toggle-department">Department</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-projectgroup" checked>
+                <label class="form-check-label" for="toggle-projectgroup">Project Group</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-requestor" checked>
+                <label class="form-check-label" for="toggle-requestor">Requestor</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-litho" >
+                <label class="form-check-label" for="toggle-litho">Litho</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-reticle" >
+                <label class="form-check-label" for="toggle-reticle">Reticle</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-integrator">
+                <label class="form-check-label" for="toggle-integrator">Integrator</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-topic" checked>
+                <label class="form-check-label" for="toggle-topic">Topic</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-specialfocus" checked>
+                <label class="form-check-label" for="toggle-specialfocus">Special Focus</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-requesttype" >
+                <label class="form-check-label" for="toggle-requesttype">Request Type</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-estimatedenddate" >
+                <label class="form-check-label" for="toggle-estimatedenddate">Estimated End Date</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-noofsamples" >
+                <label class="form-check-label" for="toggle-noofsamples">No.of Samples</label>
+            </div>
+            
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-currentnumber" checked>
+                <label class="form-check-label" for="toggle-currentnumber">Short Loop</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-name" checked>
+                <label class="form-check-label" for="toggle-name">Name</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-tmplotid" checked>
+                <label class="form-check-label" for="toggle-tmplotid">Lot_Id</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-esnumber" >
+                <label class="form-check-label" for="toggle-esnumber">ES Number</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-location" >
+                <label class="form-check-label" for="toggle-location">Location</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-status" >
+                <label class="form-check-label" for="toggle-status">Status</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-enddate" >
+                <label class="form-check-label" for="toggle-enddate">End Date</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-development" >
+                <label class="form-check-label" for="toggle-development">Development</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-metrology" >
+                <label class="form-check-label" for="toggle-metrology">Metrology</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-duplo" >
+                <label class="form-check-label" for="toggle-duplo">Duplo</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="toggle-other" >
+                <label class="form-check-label" for="toggle-other">Other</label>
+            </div>
+            <!-- Add more checkboxes for other columns -->
+        </div>
+    </div>
+    <script>
+        function applyColumnVisibility() {
+            document.querySelectorAll('.form-check-input').forEach(function (checkbox) {
+                const idPart = checkbox.id.split('-')[1];  // e.g., 'wbs'
+                const colClass = '.col-' + idPart;
+    
+                // Toggle both TH and TD cells with that class
+                document.querySelectorAll(colClass).forEach(function (el) {
+                    el.style.display = checkbox.checked ? '' : 'none';
+                });
+            });
+        }
+    
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initial visibility
+            applyColumnVisibility();
+    
+            // On checkbox change
+            document.querySelectorAll('.form-check-input').forEach(function (checkbox) {
+                checkbox.addEventListener('change', applyColumnVisibility);
+            });
+    
+            // On DataTable redraw (pagination, sort, search)
+            $('#example4').on('draw.dt', applyColumnVisibility);
+        });
+    </script>
+    
+    
+
+{% endblock content %}

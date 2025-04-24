@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+    <title>Department Lot Turns Usage</title>
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid mt-2">
+    <!-- Filters -->
+    <div class="row">
+        <div class="col-md-2">
+            <div class="card p-3 shadow fixed-filter">
+                <form id="filter-form">
+                    <h5>JPN FY</h5>
+                    {% for jpn in jpnfy_choices %}
+                    <div class="form-check">
+                        <input class="form-check-input jpnfy-radio" type="radio" name="jpnfy" value="{{ jpn }}" {% if jpn == selected_jpnfy %}checked{% endif %}>
+                        <label class="form-check-label">{{ jpn }}</label>
+                    </div>
+                    {% endfor %}
+
+                    <h5>Factory_BU Filter</h5>
+                    <div class="form-check pe-3">
+                        <input class="form-check-input" type="checkbox" id="select-all">
+                        <label class="form-check-label">Select All</label>
+                    </div>
+
+                    {% for factory_bu in factory_bu_choices %}
+                    <div class="form-check">
+                        <input class="form-check-input factory-bu-checkbox" type="checkbox" name="factory_bu" value="{{ factory_bu }}">
+                        <label class="form-check-label">{{ factory_bu }}</label>
+                    </div>
+                    {% endfor %}
+                </form>
+            </div>
+        </div>
+
+        <!-- Charts + Tables -->
+        <div class="col-md-10">
+            <div class="row">
+                <!-- Chart Containers -->
+                <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="cumulative-chart"></div></div></div></div>
+                <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="stacked-bar-chart"></div></div></div></div>
+                <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="cumulative-euv-chart"></div></div></div></div>
+                <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="stacked-euv-chart"></div></div></div></div>
+                <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="cumulative-exe-chart"></div></div></div></div>
+                <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="stacked-exe-chart"></div></div></div></div>
+
+                <!-- Table Container -->
+                <div class="col-md-12">
+                    <div id="table-container">
+                        {% include 'partials/department_table.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ApexCharts CDN -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectAllCheckbox = document.getElementById("select-all");
+        const checkboxes = document.querySelectorAll(".factory-bu-checkbox");
+        const jpnfyRadios = document.querySelectorAll(".jpnfy-radio");
+        let charts = {};
+    
+        function fetchData() {
+            let selectedValues = [];
+            document.querySelectorAll(".factory-bu-checkbox:checked").forEach(cb => selectedValues.push(cb.value));
+            let selectedJpnfy = document.querySelector(".jpnfy-radio:checked")?.value || "{{ selected_jpnfy }}";
+    
+            fetch("{% url 'department_lot_usage' %}?" + new URLSearchParams({ jpnfy: selectedJpnfy, factory_bu: selectedValues }), {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("table-container").innerHTML = data.table_html;
+                updateCharts(data);
+            });
+        }
+    
+        function updateCharts(data) {
+    renderChart("#cumulative-chart", "Cumulative Lot Turns", "line", data.cumulative_series_lt, data.categories);
+    renderChart("#stacked-bar-chart", "Monthly Lot Turns", "bar", data.monthly_series_lt, data.categories, true);
+
+    renderChart("#cumulative-euv-chart", "Cumulative EUV 3400", "line", data.cumulative_series_euv, data.categories);
+    renderChart("#stacked-euv-chart", "Monthly EUV 3400", "bar", data.monthly_series_euv, data.categories, true);
+
+    renderChart("#cumulative-exe-chart", "Cumulative EXE 5000", "line", data.cumulative_series_exe, data.categories);
+    renderChart("#stacked-exe-chart", "Monthly EXE 5000", "bar", data.monthly_series_exe, data.categories, true);
+}
+        function renderChart(selector, title, type, series, categories, stacked = false) {
+            if (charts[selector]) charts[selector].destroy();
+    
+            const options = {
+                series: series,
+                chart: {
+                    type: type,
+                    height: 400,
+                    stacked: stacked,
+                    dropShadow: {
+                        enabled: true,
+                        color: '#000',
+                        top: 8,
+                        left: 2,
+                        blur: 4,
+                        opacity: 0.1
+                    },
+                    toolbar: { show: false },
+                    zoom: { enabled: false }
+                },
+                colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
+                stroke: {
+                    width: 3,
+                    curve: "straight",
+                    dashArray: 0
+                },
+                markers: {
+                    size: 3,
+                    strokeWidth: 1,
+                    hover: { size: 5 }
+                },
+                grid: {
+                    borderColor: '#e7e7e7',
+                    row: {
+                        colors: ['#fafafa', 'transparent'],
+                        opacity: 0.5
+                    }
+                },
+                xaxis: { categories: categories ,tickPlacement: 'between'},
+                yaxis:{
+                    labels: {
+                        formatter: function (val) {
+                            return val.toFixed(0);
+                        }
+                    }
+                },
+                title: { text: title, align: "center" },
+                tooltip: {
+                    shared: true,
+                    intersect: false
+                },
+                legend: { position: "top" }
+            };
+    
+            charts[selector] = new ApexCharts(document.querySelector(selector), options);
+            charts[selector].render();
+        }
+    
+        selectAllCheckbox.addEventListener("change", function () {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            fetchData();
+        });
+    
+        checkboxes.forEach(cb => cb.addEventListener("change", fetchData));
+        jpnfyRadios.forEach(rb => rb.addEventListener("change", fetchData));
+    
+        fetchData();
+    });
+    </script>
+    
+{% endblock %}

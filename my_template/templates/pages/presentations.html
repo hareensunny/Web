@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container ">
+  <h2 class="text-center text-primary mb-4">Upload CSV Data</h2>
+
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm border rounded">
+        <div class="card-body">
+          <form method="POST" enctype="multipart/form-data" action="{% url 'handle_upload' 'lot_status' %}" class="mb-4">
+            {% csrf_token %}
+            <label class="form-label fw-semibold">📄 Upload Lot Status CSV</label>
+            <div class="input-group mb-3">
+              <input type="file" name="csv_file" class="form-control">
+              <button class="btn btn-primary" type="submit">Upload</button>
+            </div>
+          </form>
+
+          <form method="POST" enctype="multipart/form-data" action="{% url 'handle_upload' 'budget' %}" class="mb-4">
+            {% csrf_token %}
+            <label class="form-label fw-semibold">💰 Upload Budget Data CSV</label>
+            <div class="input-group mb-3">
+              <input type="file" name="csv_file" class="form-control">
+              <button class="btn btn-success" type="submit">Upload</button>
+            </div>
+          </form>
+
+          <form method="POST" enctype="multipart/form-data" action="{% url 'handle_upload' 'contract' %}" class="mb-4">
+            {% csrf_token %}
+            <label class="form-label fw-semibold">📑 Upload Contract Data CSV</label>
+            <div class="input-group mb-3">
+              <input type="file" name="csv_file" class="form-control">
+              <button class="btn btn-warning" type="submit">Upload</button>
+            </div>
+          </form>
+
+          <form method="POST" enctype="multipart/form-data" action="{% url 'handle_upload' 'csv' %}" class="mb-4">
+            {% csrf_token %}
+            <label class="form-label fw-semibold">📊 Upload Active/Completed CSV</label>
+            <div class="input-group mb-3">
+              <input type="file" name="csv_file" class="form-control">
+              <button class="btn btn-secondary" type="submit">Upload</button>
+            </div>
+          </form>
+
+          <form method="POST" enctype="multipart/form-data" action="{% url 'handle_upload' 'euvdata' %}" class="mb-2">
+            {% csrf_token %}
+            <label class="form-label fw-semibold">⚙️ Upload EUV Data CSV</label>
+            <div class="input-group">
+              <input type="file" name="csv_file" class="form-control">
+              <button class="btn btn-info" type="submit">Upload</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

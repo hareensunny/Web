@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+    <title>Lot Status</title>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary fw-bold">Lot Status Dashboard</h2>
+        <button class="btn btn-outline-secondary" id="reset-filter">Reset Filters</button>
+    </div>
+
+    <!-- Factory Count Cards -->
+    <div class="row g-3 mb-4">
+        {% for factory, count in factory_counts.items %}
+        <div class="col-md-3 col-lg-2">
+            <div class="card border-0 shadow-sm hover-shadow factory-card cursor-pointer" data-factory="{{ factory }}">
+                <div class="card-body text-center">
+                    <h4 class="text-info mb-0 fw-bold">{{ count }}</h4>
+                    <small class="text-muted">{{ factory }}</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Table -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle text-center" id="lot-status-table">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th>Owner</th>
+                            <th>Factory</th>
+                            <th>Lot ID</th>
+                            <th>Hold Code</th>
+                            <th>Priority</th>
+                            <th>Current Operation</th>
+                            {% for i in operations_range %}
+                                <th>Oper{{ i }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in lot_status_data %}
+                        <tr data-factory="{{ record.factory }}">
+                            <td>{{ record.owner }}</td>
+                            <td>{{ record.factory }}</td>
+                            <td>{{ record.lot_id }}</td>
+                            <td>{{ record.hold_code }}</td>
+                            <td>{{ record.priority }}</td>
+                            <td>{{ record.current_operation }}</td>
+                            <td>{{ record.oper1 }}</td>
+                            <td>{{ record.oper2 }}</td>
+                            <td>{{ record.oper3 }}</td>
+                            <td>{{ record.oper4 }}</td>
+                            <td>{{ record.oper5 }}</td>
+                            <td>{{ record.oper6 }}</td>
+                            <td>{{ record.oper7 }}</td>
+                            <td>{{ record.oper8 }}</td>
+                            <td>{{ record.oper9 }}</td>
+                            <td>{{ record.oper10 }}</td>
+                            <td>{{ record.oper11 }}</td>
+                            <td>{{ record.oper12 }}</td>
+                            <td>{{ record.oper13 }}</td>
+                            <td>{{ record.oper14 }}</td>
+                            <td>{{ record.oper15 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to Filter Table on Click -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const factoryCards = document.querySelectorAll(".factory-card");
+    const tableRows = document.querySelectorAll("#lot-status-table tbody tr");
+    const resetButton = document.getElementById("reset-filter");
+
+    factoryCards.forEach(card => {
+        card.addEventListener("click", function () {
+            const selectedFactory = this.getAttribute("data-factory");
+            tableRows.forEach(row => {
+                row.style.display = row.getAttribute("data-factory") === selectedFactory ? "" : "none";
+            });
+        });
+    });
+
+    resetButton.addEventListener("click", function () {
+        tableRows.forEach(row => row.style.display = "");
+    });
+});
+</script>
+
+{% endblock %}

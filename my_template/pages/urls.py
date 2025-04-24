@@ -1,0 +1,46 @@
+from django.urls import path
+from . import views
+from django.contrib.auth.views import LogoutView
+from .views import form_view, get_factories, get_bus, get_departments, get_project_groups, get_requestors, edit_form_data,waiting_lots,edit_active_form_data,active_form_data_view,completed_form_data_view,search_lot,YEAR,JPN_FY,CURRENT_FY,department_lot_usage,upload_budget_data,executive_summary_data,upload_lot_status_data, lot_status,upload_contract_data, contract_status,file_explorer, delete_file, delete_folder,summary_page,presentations, handle_upload
+
+urlpatterns = [
+    path('auth/login', views.login, name='login'),
+    path('auth/callback', views.callback, name='callback'),
+    path('', views.home, name='home'),
+    path('get-factories/', get_factories, name='get_factories'),
+    path('get-bus/', get_bus, name='get_bus'),
+    path('get-departments/', get_departments, name='get_departments'),
+    path('get-project-groups/', get_project_groups, name='get_project_groups'),
+    path('get-requestors/', get_requestors, name='get_requestors'),
+    path('newlotform/', form_view, name='form_view'),
+    path('waiting_lots/', waiting_lots, name='form_data_list'),
+    path('active_lots/', active_form_data_view, name='active_form_data_view'),
+    path('edit_active_lots/<int:pk>/',edit_active_form_data, name='edit_active_form_data'),
+    path('completed_lots/', completed_form_data_view, name='completed_form_data_view'),
+    path('edit_waiting_lots/<int:pk>/', edit_form_data, name='edit_form_data'),
+    path('edit_active_lots/<int:pk>/', views.edit_active_form_data, name='edit_active_form_data'),
+    # path('edit_completed_lots/<int:pk>/', edit_completed_form_data, name='edit_completed_form_data'),
+    path('lot_search/', search_lot, name='search_lot'),
+    # path('upload/', views.import_excel, name='import_excel'),
+    path('upload_csv/', views.upload_csv, name='upload_csv'),
+    path('upload_euvdata/', views.upload_euvdata, name='upload_euvdata'),
+    path('year/', YEAR, name="year"),
+    path('jpnfy/', JPN_FY, name="jpnfy"),
+    path('currentfy/',CURRENT_FY, name="currentfy"),
+    path('auth/logout', views.logout_view, name='logout'),
+    path('department-lot-usage/', department_lot_usage, name='department_lot_usage'),
+    path('upload_budget/', upload_budget_data, name='upload_budget'),
+    path('executive_summary/', executive_summary_data, name='executive_summary'),
+    path("upload-lot-status/", upload_lot_status_data, name="upload_lot_status"),
+    path("lot-status/", lot_status, name="lot_status"),
+    path("upload-contract-data/", upload_contract_data, name="upload_contract_data"),
+    path("contract-status/", contract_status, name="contract_status"),
+    path('file-explorer/', file_explorer, name='file_explorer'),
+    path('delete/file/<int:file_id>/', delete_file, name='delete_file'),
+    path('delete/folder/<int:folder_id>/', delete_folder, name='delete_folder'),
+    path("summary/", summary_page, name="summary_page"),
+    path("presentations/", presentations, name="presentations"),
+    path("upload/<str:upload_type>/", handle_upload, name="handle_upload"),
+    path('completed-lots/data/', views.completed_lots_data, name='completed_lots_data'),
+   
+]

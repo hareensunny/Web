@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    <title>JPN FY Table</title>
+{% endblock title %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        
+        <!-- Filters Section -->
+        <div class="col-md-1">
+            <div class="card shadow p-3 fixed-filter">
+                <form method="get" id="filter-form">
+                    
+                        
+                        <h5>WBS</h5>
+                        
+                        {% for wbs in unique_wbs %}
+                        
+                            <div class="form-check pe-3">
+                                <input class="form-check-input" type="radio" name="chart_wbs_name" value="{{ wbs }}"
+                                    {% if wbs == selected_wbs_chart %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                                <label class="form-check-label">{{ wbs }}</label>
+                            </div>
+                        
+                        {% endfor %}
+                        
+                        
+                        <hr>
+                        <h5>JPN_FY</h5>
+                        {% for jpnfy in unique_jpnfy %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="chart_jpnfy" value="{{ jpnfy }}"
+                                {% if jpnfy|stringformat:"s" == selected_jpnfy_chart|stringformat:"s" %}checked{% endif %}
+                                onchange="document.getElementById('filter-form').submit();">
+                            <label class="form-check-label">{{ jpnfy }}</label>
+                        </div>
+                        {% endfor %}
+                        
+                        
+                   
+                    
+                        
+                   
+                    
+                        
+                    
+                </form>
+            </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="col-md-11">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100 shadow">
+                        <div class="card-body">
+                            <table class="table table-bordered">
+                                <thead class="bg-p text-white">
+                                    <tr >
+                                        <th>Factory + BU</th>
+                                        <th> Lot Turns</th>
+                                        
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for factory, data in table_data.items %}
+                                        <!-- Factory Row -->
+                                        <tr>
+                                            <td class="bg-s " ><strong>{{ factory }}</strong></td>
+                                            <td><strong>{{ data.total_factory_lot_turns|floatformat:2 }}</strong></td>
+                                            
+                                        </tr>
+                                        <!-- BU Rows under the Factory -->
+                                        {% for bu, bu_lot_turns in data.bus.items %}
+                                        <tr>
+                                            <td class="bg-s">&emsp;{{ bu }}</td>
+                                            
+                                            <td>{{ bu_lot_turns|floatformat:2 }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th>Total</th>
+                                        <th colspan="2">{{ total_lot_turns|floatformat:2 }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8 mb-3">
+                    <div class="card h-100 shadow">
+                        <div class="card-body">
+                            <div id="lot-turn-chart" ></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-body">
+                            <table class="table table-bordered">
+                                <thead class="bg-p">
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Sum of Total_Lots</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in table_data1 %}
+                                    <tr>
+                                        <td class="bg-s">{{ row.month }}</td>
+                                        <td>{{ row.total_lot_turns|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th>Grand Total</th>
+                                        <th>{{ total_lot_turns|floatformat:2 }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+               
+                <div class="col-md-8">
+                    <div class="card h-100 shadow">
+                        <div class="card-body">
+                            <div id="lot-turn-chart1" ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            
+            
+            
+        </div>
+    </div>
+</div>
+
+<!-- Include ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+    // Chart Data from Django Context
+    var chartData = {{ chart_data|safe }};
+    var seriesData = [];
+    var categories = [];
+
+    // Prepare data for ApexCharts
+    for (var factory in chartData) {
+        categories.push(factory); // Add factory to x-axis categories
+        for (var bu in chartData[factory]) {
+            let seriesIndex = seriesData.findIndex(series => series.name === bu);
+            if (seriesIndex === -1) {
+                seriesData.push({ name: bu, data: Array(categories.length).fill(0) });
+                seriesIndex = seriesData.length - 1;
+            }
+            seriesData[seriesIndex].data[categories.indexOf(factory)] = chartData[factory][bu];
+        }
+    }
+
+    // Align data with missing categories
+    seriesData.forEach(series => {
+        while (series.data.length < categories.length) {
+            series.data.push(0);
+        }
+    });
+
+    // Configure ApexCharts
+    var options = {
+        series: seriesData,
+        chart: {
+            type: 'bar',
+            height: 400,
+            stacked: true,
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: '60%',
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            formatter: function (val) {
+                return val ? val.toFixed(2) : "";
+            }
+        },
+        xaxis: {
+            categories: categories,
+            title: {
+                text: 'Factory',
+            }
+        },
+        yaxis: {
+            title: {
+                text: 'Lot Turns',
+            }
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'center',
+        },
+        title: {
+            text: 'Lot Turn Consumption by BU JP FY',
+            align: 'center',
+        },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return val.toFixed(2) + " Lot Turns";
+                }
+            }
+        }
+    };
+
+    // Render Chart
+    var chart = new ApexCharts(document.querySelector("#lot-turn-chart"), options);
+    chart.render();
+</script>
+
+<script>
+    // Chart Data from Django Context
+    var chartData1 = {{ chart_data1|safe }};
+    var month_seriesData = [];
+    var month_categories = [];
+
+    // Prepare data for ApexCharts
+    for (var month in chartData1) {
+        month_categories.push(month); // Add factory to x-axis categories
+        for (var factory in chartData1[month]) {
+            let seriesIndex = month_seriesData.findIndex(series => series.name === factory);
+            if (seriesIndex === -1) {
+                month_seriesData.push({ name: factory, data: Array(month_categories.length).fill(0) });
+                seriesIndex = month_seriesData.length - 1;
+            }
+            month_seriesData[seriesIndex].data[month_categories.indexOf(month)] = chartData1[month][factory];
+        }
+    }
+
+    // Align data with missing categories
+    month_seriesData.forEach(series => {
+        while (series.data.length < month_categories.length) {
+            series.data.push(0);
+        }
+    });
+
+    // Configure ApexCharts
+    var options = {
+        series: month_seriesData,
+        chart: {
+            type: 'bar',
+            height: 400,
+            stacked: true,
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: '60%',
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            formatter: function (val) {
+                return val ? val.toFixed(2) : "";
+            }
+        },
+        xaxis: {
+            categories: month_categories,
+            title: {
+                text: 'Months',
+            }
+        },
+        yaxis: {
+            title: {
+                text: 'Lot Turns',
+            }
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'center',
+        },
+        title: {
+            text: 'Lot Turn Consumption by BU JP FY',
+            align: 'center',
+        },
+        tooltip: {
+            y: {
+                formatter: function (val) {
+                    return val.toFixed(2) + " Lot Turns";
+                }
+            }
+        }
+    };
+
+    // Render Chart
+    var chart = new ApexCharts(document.querySelector("#lot-turn-chart1"), options);
+    chart.render();
+</script>
+{% endblock content %}

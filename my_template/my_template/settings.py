@@ -147,12 +147,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
-MICROSOFT_AUTH_CLIENT_ID = 'c8572a0f-47fd-4311-8de1-b252465284a3'
-MICROSOFT_AUTH_CLIENT_SECRET = 'mGH8Q~pX-29Cp1ADm6EWC71bQp2NNB-d4XmzycPp'
-MICROSOFT_AUTH_TENANT_ID = 'a8ba3597-8f6a-4003-992c-ed560dcdaba4'
-MICROSOFT_AUTH_REDIRECT_URI = 'http://localhost:8000/auth/callback'  # Update to match your redirect URI
-POST_LOGOUT_REDIRECT_URI = 'http://localhost:8000/auth/login'
-# MICROSOFT_AUTH_REDIRECT_URI = 'https://localhost:8000/login' 
+
 
 
 LOGGING = {

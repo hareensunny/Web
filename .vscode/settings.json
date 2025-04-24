@@ -1,0 +1,10 @@
+{
+    "python.analysis.aiCodeActions": {
+
+    },
+    "editor.experimental.asyncTokenizationVerification": true,
+    "github.copilot.advanced": {
+        
+    },
+    "editor.experimental.asyncTokenizationLogging": true
+}

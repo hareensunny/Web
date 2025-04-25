@@ -9,17 +9,21 @@
 <div class="container-fluid mt-5">
 
     <!-- Search Form -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <h4 class="card-title">Lot Search Database</h4>
-            <form method="get" action="{% url 'search_lot' %}">
-                <div class="input-group">
-                    <input type="text" name="lot_id" class="form-control" placeholder="Search Lot ID" value="{{ request.GET.lot_id }}">
-                    <button class="btn btn-primary" type="submit">
-                        <i class="bi bi-search"></i> Search
-                    </button>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title">Search Lot</h4>
+                    <form method="get" action="{% url 'search_lot' %}">
+                        <div class="input-group">
+                            <input type="text" name="lot_id" class="form-control" placeholder="Search Lot ID" value="{{ request.GET.lot_id }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="bi bi-search"></i> 
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 

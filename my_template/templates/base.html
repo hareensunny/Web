@@ -88,7 +88,7 @@
                             Documents
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="documentsDropdown">
-                            <li><a class="dropdown-item" href="{% url 'presentations' %}">Presentations</a></li>
+                            <li><a class="dropdown-item" href="{% url 'presentations' %}">Uploads</a></li>
                             <li><a class="dropdown-item" href="{% url 'file_explorer' %}">Files</a></li>
                         </ul>
                     </li>
@@ -129,6 +129,8 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" href="#">{{ request.session.user_info.preferred_username }}</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#">Role: <strong>{{ request.session.role|title }}</strong></a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
                             </ul>

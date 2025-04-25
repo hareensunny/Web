@@ -1,11 +1,13 @@
+
 from urllib import request
 import pandas as pd
 from django.contrib import messages
 import msal
 from django.conf import settings
-from django.http import Http404, HttpResponseRedirect, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponseRedirect, HttpResponse, JsonResponse,HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
+from django.contrib.auth.models import User
 from .models import Lot,ActiveForm_Data,CompletedForm_Data, WBS, Factory, BU, Department, ProjectGroup, Requestor, Reticle, Integrator, RequestType, Litho, Location, upload_data,BudgetData,LotStatusData,ContractData,UploadedFile, Folder,UploadRecord
 import datetime
 from django.core.files.storage import FileSystemStorage
@@ -22,9 +24,24 @@ from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
 import os
 from django.core.exceptions import MultipleObjectsReturned
+from django.db.models import Count
 
+# def role_required(allowed_roles=[]):
+#     """
+#     Decorator to restrict access to views based on user roles stored in session.
+#     """
+#     def decorator(view_func):
+#         def _wrapped_view(request, *args, **kwargs):
+#             role = request.session.get('role')  # Get user role from session
+#             if role not in allowed_roles:
+#                 # Return 403 Forbidden if role not allowed
+#                 return HttpResponseForbidden("Access Denied: You do not have permission to view this page.")
+#             return view_func(request, *args, **kwargs)  # Call the original view function
+#         return _wrapped_view
+#     return decorator
 
-
+# Modify your login callback view to set session['role'] based on Django group
+from django.contrib.auth.models import Group
 
 
 def get_msal_app():
@@ -59,14 +76,40 @@ def callback(request):
     if "error" in result:
         return render(request, "error.html", {"error": result.get("error_description")})
 
-    # Ensure user info is correctly stored
-    request.session["access_token"] = result.get("access_token")
-    request.session["user_info"] = result.get("id_token_claims")
+    # Store access token and user info in session
+    access_token = result.get("access_token")
+    id_token_claims = result.get("id_token_claims")
+    user_email = id_token_claims.get("preferred_username")
 
-    # Debugging: Print session data
-    print("Session Data After Login:", request.session.get("user_info"))
+    request.session["access_token"] = access_token
+    request.session["user_info"] = id_token_claims
 
-    return redirect("home")
+    print("Trying to authenticate:", user_email)
+
+    try:
+        # It's safer to check username if you use email as username
+        user = User.objects.get(username=user_email)  # or use .filter(email=user_email).first()
+
+        request.session["user_id"] = user.id
+
+        # Normalize group names and check
+        if user.groups.filter(name__iexact='Admin').exists():
+            request.session['role'] = 'admin'
+        elif user.groups.filter(name__iexact='Superuser').exists():
+            request.session['role'] = 'superuser'
+        elif user.groups.filter(name__iexact='User').exists():
+            request.session['role'] = 'user'
+        else:
+            return HttpResponse("Email is registered but has no role assigned. Contact Admin.", status=403)
+
+        print("Assigned role:", request.session['role'])
+        print("Session Data After Login:", request.session.get("user_info"))
+
+        return redirect("home")
+
+    except User.DoesNotExist:
+        return HttpResponse("Your email is not registered with us. Please contact the administrator.", status=403)
+
 
 def logout_view(request):
     """Logs out the user and redirects to Microsoft logout page."""
@@ -148,42 +191,37 @@ def waiting_lots(request):
 
     return render(request, 'pages/waiting_lots.html', {'form_data': form_data,'factories': factories,})
 
+# def active_lots(request):
+#     active_form_data = ActiveForm_Data.objects.filter(status='Active')
+
+ 
+
+#     return render(request, 'pages/active_lots.html', {
+#         'active_form_data': active_form_data
+        
+#     })
+
+# def completed_lots(request):
+#     completed_form_data = CompletedForm_Data.objects.filter(status='Completed')
+#     return render(request, 'pages/complete_lots.html', {'completed_form_data': completed_form_data})
 def active_lots(request):
-    active_form_data = ActiveForm_Data.objects.filter(status='Active')
 
-    raw_factories = (
-        active_form_data
-        .values('factory__name')
-        .annotate(count=Count('id'))
-        .order_by('factory__name')
-    )
-
-    factories = [
-        {"name": f["factory__name"], "count": f["count"]}
-        for f in raw_factories if f["factory__name"]
-    ]
+    active_form_data = ActiveForm_Data.objects.filter(status='active')
+   
 
     return render(request, 'pages/active_lots.html', {
         'active_form_data': active_form_data,
-        'factories': factories,
+        
     })
 
 def completed_lots(request):
-    completed_form_data = CompletedForm_Data.objects.filter(status='completed')
-    raw_factories = (
-        completed_form_data.objects.filter(status='completed')
-        .values('factory__name')
-        .annotate(count=Count('id'))
-        .order_by('factory__name')
-    )
+    completed_form_data = CompletedForm_Data.objects.filter(status__iexact='Completed')
 
-    # Convert for template use
-    factories = [
-        {"name": f["factory__name"], "count": f["count"]}
-        for f in raw_factories if f["factory__name"]
-    ]
-    return render(request, 'pages/complete_lots.html', {'completed_form_data': completed_form_data,'factories': factories,})
-
+    
+    return render(request, 'pages/complete_lots.html', {
+        'completed_form_data': completed_form_data
+        
+    })
 def get_factories(request):
     wbs_id = request.GET.get('wbs_id')
     factories = Factory.objects.filter(wbs_id=wbs_id)
@@ -280,8 +318,21 @@ def edit_form_data(request, pk):
     return render(request, 'pages/edit_waiting_lots.html', {'form_data': form_data, 'locations': Location.objects.all()})
 
 def active_form_data_view(request):
-    active_form_data = ActiveForm_Data.objects.all()  # Retrieve all active lots
-    return render(request, 'pages/active_lots.html', {'active_form_data': active_form_data})
+    active_form_data = ActiveForm_Data.objects.all()
+
+    # Build factory count dictionary
+    factory_dict = {}
+    for obj in active_form_data:
+        if obj.factory:
+            name = obj.factory.name
+            factory_dict[name] = factory_dict.get(name, 0) + 1
+
+    factories = [{'name': name, 'count': count} for name, count in factory_dict.items()]
+
+    return render(request, 'pages/active_lots.html', {
+        'active_form_data': active_form_data,
+        'factories': factories,
+    })
 
 def generate_current_number():
     current_year =  datetime.now().year
@@ -372,58 +423,96 @@ def edit_active_form_data(request, pk):
     return render(request, 'pages/edit_active_lots.html', {'form_data': form_data, 'locations': Location.objects.all()})
 
 def completed_form_data_view(request):
-    # completed_form_data = CompletedForm_Data.objects.all()
-    return render(request, 'pages/complete_lots.html')
+    completed_form_data = CompletedForm_Data.objects.all()
+
+    # Get unique factories
+    factories = CompletedForm_Data.objects.values_list('factory__name', flat=True).distinct()
+
+    return render(request, 'pages/complete_lots.html', {
+        'completed_form_data': completed_form_data,
+        'factories': factories
+    })
+
+def completed_factory_counts(request):
+    factory_dict = {}
+    for obj in CompletedForm_Data.objects.all():
+        if obj.factory:
+            name = obj.factory.name.strip().upper()
+            factory_dict[name] = factory_dict.get(name, 0) + 1
+
+    data = [{"name": name, "count": count} for name, count in factory_dict.items()]
+    return JsonResponse(data, safe=False)
+
+from django.core.serializers.json import DjangoJSONEncoder
+from django.utils.dateformat import format as date_format
+
+from django.http import JsonResponse
+from .models import CompletedForm_Data
 
 def completed_lots_data(request):
-    draw = int(request.GET.get('draw', 1))
-    start = int(request.GET.get('start', 0))
-    length = int(request.GET.get('length', 10))
+    # DataTables parameters
+    draw = int(request.GET.get("draw", 1))
+    start = int(request.GET.get("start", 0))
+    length = int(request.GET.get("length", 10))
 
-    query = CompletedForm_Data.objects.all()
-    total_count = query.count()
+    # Factory filter from frontend (optional)
+    factory_filter = request.GET.get("factory_filter", "").strip().upper()
 
-    # Pagination
-    page = query[start:start + length]
+    # Base queryset
+    queryset = CompletedForm_Data.objects.select_related(
+        'factory', 'wbs', 'project_group', 'bu', 'department', 'requestor',
+       'reticle', 'litho', 'integrator', 'request_type', 'location'
+    ).all()
 
-    # Prepare response data
+    # Apply filtering
+    if factory_filter:
+        queryset = queryset.filter(factory__name__iexact=factory_filter)
+
+    records_total = CompletedForm_Data.objects.count()
+    records_filtered = queryset.count()
+
+    # Apply pagination
+    paginated_data = queryset[start:start + length]
+
+    # Build DataTables response
     data = []
-    for item in page:
+    for obj in paginated_data:
         data.append({
-            'tmp_lot_id': item.tmp_lot_id,
-            'url': item.url,
-            'wbs': item.wbs.name if item.wbs else '',
-            'project_group': item.project_group.name if item.project_group else '',
-            'factory': item.factory.name if item.factory else '',
-            'bu': item.bu.name if item.bu else '',
-            'department': item.department.name if item.department else '',
-            'current_number': item.current_number,
-            'requestor': item.requestor.name if item.requestor else '',
-            'topic': item.topic,
-            'special_focus': item.special_focus,
-            'name': item.project_factory_date_code,
-            'litho': item.litho.name if item.litho else '',
-            'reticle': item.reticle.name if item.reticle else '',
-            'integrator': item.integrator.name if item.integrator else '',
-            'request_type': item.request_type.name if item.request_type else '',
-            'estimated_end_date': item.estimated_end_date,
-            'no_of_samples': item.no_of_samples,
-            'es_number': item.es_number,
-            'location': item.location.name if item.location else '',
-            'status': item.status,
-            'end_date': item.end_date,
-            'development': item.development,
-            'metrology': item.metrology,
-            'duplo': item.duplo,
-            'other': item.other,
+            "tmp_lot_id": obj.tmp_lot_id,
+            "factory": obj.factory.name if obj.factory else "",
+            "url": obj.url,
+            "wbs": obj.wbs.name if obj.wbs else "",
+            "project_group": obj.project_group.name if obj.project_group else "",
+            "bu": obj.bu.name if obj.bu else "",
+            "department": obj.department.name if obj.department else "",
+            "current_number": obj.current_number,
+            "requestor": obj.requestor.name if obj.requestor else "",
+            "topic": obj.topic,
+            "special_focus": obj.special_focus,
+            "name": obj.project_factory_date_code,
+            "reticle": obj.reticle.name if obj.reticle else "",
+            "litho": obj.litho.name if obj.litho else "",
+            "integrator": obj.integrator.name if obj.integrator else "",
+            "request_type": obj.request_type.name if obj.request_type else "",
+            "estimated_end_date": obj.estimated_end_date.strftime("%Y-%m-%d") if obj.estimated_end_date else "",
+            "no_of_samples": obj.no_of_samples,
+            "es_number": obj.es_number,
+            "location": obj.location.name if obj.location else "",
+            "status": obj.status,
+            "end_date": obj.end_date.strftime("%Y-%m-%d") if obj.end_date else "",
+            "development": obj.development,
+            "metrology": obj.metrology,
+            "duplo": obj.duplo,
+            "other": obj.other,
         })
 
     return JsonResponse({
-        'draw': draw,
-        'recordsTotal': total_count,
-        'recordsFiltered': total_count,
-        'data': data
+        "draw": draw,
+        "recordsTotal": records_total,
+        "recordsFiltered": records_filtered,
+       "data": data,
     })
+
 
 def search_lot(request):
     combined_data = None  # Initialize the combined data variable
@@ -558,8 +647,7 @@ def upload_csv(request):
             return HttpResponse("Please upload a valid CSV file.")
 
         # Decode the file and handle BOM
-        file_data = csv_file.read().decode('utf-8-sig')  # Handles BOM issues
-        csv_reader = csv.DictReader(file_data.splitlines())  # Use DictReader for column mapping
+        file_data = csv_file.read().decode('utf-8-sig')  # Handles BOM issues-        csv_reader = csv.DictReader(file_data.splitlines())  # Use DictReader for column mapping
 
         def parse_date(date_str):
             if date_str:
@@ -627,7 +715,6 @@ def upload_csv(request):
 
             integrator_name = row.get('integrator')
             integrator, _ = Integrator.objects.get_or_create(name=integrator_name)
-
             request_type_name = row.get('request_type')
             request_type, _ = RequestType.objects.get_or_create(name=request_type_name)
 
@@ -834,10 +921,10 @@ def upload_lot_status_data(request):
                     hold_code=row.get("Holdcode"),
                     priority=int(row.get("Prio")) if row.get("Prio") else None,
                     current_operation=row.get("Current_Operation"),
-                    oper1=row.get("Oper1"),
+                   oper1=row.get("Oper1"),
                     oper2=row.get("Oper2"),
                     oper3=row.get("Oper3"),
-                    oper4=row.get("Oper4"),
+                        oper4=row.get("Oper4"),
                     oper5=row.get("Oper5"),
                     oper6=row.get("Oper6"),
                     oper7=row.get("Oper7"),
@@ -898,6 +985,9 @@ def upload_contract_data(request):
 
     return render(request, 'pages/upload_contract_data.html')
 
+from collections import defaultdict
+from django.db.models import Sum
+
 def calculate_lot_turns_by_factory_bu_wbs(selected_wbs=None, selected_years=None):
     """
     Aggregates the total lot_turns for each Factory, BU, and WBS, and filters by selected WBS and years.
@@ -910,7 +1000,7 @@ def calculate_lot_turns_by_factory_bu_wbs(selected_wbs=None, selected_years=None
     if selected_years:
         query = query.filter(year__in=selected_years)
 
-    # Aggregate EUV_3400 by Factory, BU, and WBS
+    # Aggregate lot_turns by Factory, BU, and WBS
     aggregated_data = query.values('factory__name', 'bu__name', 'wbs__name').annotate(
         total_lot_turns=Sum('lot_turns')
     ).order_by('factory__name', 'bu__name', 'wbs__name')
@@ -924,10 +1014,10 @@ def calculate_lot_turns_by_factory_bu_wbs(selected_wbs=None, selected_years=None
         wbs_name = row['wbs__name'] or "Unknown WBS"
         lot_turns = row['total_lot_turns'] or 0  # Handle null values with 0
 
-
-        chart_data[factory_name][bu_name][wbs_name] = lot_turns
+        chart_data[factory_name][bu_name][wbs_name] = lot_turns  # Fixed indentation
 
     return chart_data
+
 
 def calculate_exe500_by_factory_bu_wbs(selected_wbs=None, selected_years=None):
     """
@@ -1163,9 +1253,7 @@ def calculate_lot_turns_per_wbs_and_year(selected_wbs=None, selected_years=None)
     if selected_years:
         query = query.filter(year__in=selected_years)
 
-    aggregated_data = query.values('year', 'wbs__name').annotate(
-        total_lot_turns=Sum('lot_turns')
-    ).order_by('year', 'wbs__name')
+    aggregated_data = query.values('year', 'wbs__name').annotate(total_lot_turns=Sum('lot_turns')).order_by('year', 'wbs__name')
 
     lot_turns_by_wbs_and_year = defaultdict(lambda: defaultdict(float))
     year_totals = defaultdict(float)
@@ -1372,42 +1460,32 @@ def YEAR(request):
 
     return render(request, 'pages/year.html', context)
 def JPN_FY(request):
-    # Retrieve unique WBS (Ordered Alphabetically)
     unique_wbs = upload_data.objects.values_list('wbs__name', flat=True).distinct().order_by('wbs__name')
-
-    # Retrieve unique JPN_FY (Order by descending to get highest)
     unique_jpnfy = upload_data.objects.values_list('jpn_ytd', flat=True).distinct().order_by('-jpn_ytd')
 
-    # Default selections
-    selected_wbs = request.GET.get('chart_wbs_name', unique_wbs[0] if unique_wbs else '')  # Default: First WBS
-    selected_jpnfy = request.GET.get('chart_jpnfy')  # Only one value
+    selected_wbs = request.GET.get('chart_wbs_name', unique_wbs[0] if unique_wbs else '')
+    selected_jpnfy = request.GET.get('chart_jpnfy')
 
-    # Select the highest JPN_FY if none is selected
     if not selected_jpnfy and unique_jpnfy.exists():
         selected_jpnfy = str(unique_jpnfy.first())
 
-    # Query data based on filters
     query = upload_data.objects.all()
     if selected_wbs:
         query = query.filter(wbs__name=selected_wbs)
     if selected_jpnfy:
         query = query.filter(jpn_ytd=selected_jpnfy)
 
-    # Aggregate data for monthly chart
     monthly_data1 = query.values('year', 'month').annotate(
-        total_lot_turns=Sum('lot_turns')
-    ).order_by('year', 'month')
+        total_lot_turns=Sum('lot_turns')).order_by('year', 'month')
 
     monthly_data = query.values('year', 'month', 'factory__name').annotate(
         total_lot_turns=Sum('lot_turns')
     ).order_by('year', 'month', 'factory__name')
 
-    # Aggregate data for factory/bu chart
     aggregated_data = query.values('factory__name', 'bu__name').annotate(
         total_lot_turns=Sum('lot_turns')
     ).order_by('factory__name', 'bu__name')
 
-    # Structure chart data
     chart_data = {}
     for row in aggregated_data:
         factory = row['factory__name']
@@ -1428,7 +1506,6 @@ def JPN_FY(request):
             chart_data1[month] = {}
         chart_data1[month][factory] = lot_turns
 
-    # Prepare table data
     table_data = {}
     for row in aggregated_data:
         factory_name = row['factory__name']
@@ -1441,10 +1518,8 @@ def JPN_FY(request):
         table_data[factory_name]['total_factory_lot_turns'] += lot_turns
         table_data[factory_name]['bus'][bu_name] = lot_turns
 
-    # Total lot turns
     total_lot_turns = round(query.aggregate(total_lot_turns=Sum('lot_turns'))['total_lot_turns'] or 0, 2)
 
-    # Prepare table data for monthly summary
     table_data1 = []
     grand_total = 0
     seen_months = set()
@@ -1460,7 +1535,6 @@ def JPN_FY(request):
             })
             seen_months.add(month_name)
 
-    # Final context
     context = {
         'unique_wbs': unique_wbs,
         'unique_jpnfy': unique_jpnfy,
@@ -1482,7 +1556,6 @@ from django.template.loader import render_to_string
 from .models import upload_data, BudgetData, WBS
 
 def CURRENT_FY(request):
-    # Factory-BU filter
     unique_factory_bu = (
         upload_data.objects.values_list("factory__name", "bu__name")
         .distinct()
@@ -1491,7 +1564,6 @@ def CURRENT_FY(request):
     factory_bu_choices = [f"{f} - {b}" for f, b in unique_factory_bu if f and b]
     selected_factory_bu = request.GET.get("factory_bu")
 
-    # JPN FY list
     unique_jpnfy = list(
         upload_data.objects.values_list("jpn_ytd", flat=True)
         .distinct()
@@ -1499,7 +1571,6 @@ def CURRENT_FY(request):
     )
     highest_jpnfy = unique_jpnfy[-1] if unique_jpnfy else None
 
-    # Filtered base query
     base_query = upload_data.objects.filter(jpn_ytd=highest_jpnfy)
     if selected_factory_bu:
         try:
@@ -1508,7 +1579,6 @@ def CURRENT_FY(request):
         except ValueError:
             pass
 
-    # Summary Table (like executive_summary)
     summary_data = {
         "lot_turns": defaultdict(lambda: {"budget": 0, "consumed": 0, "remaining": 0, "consumed_by_year": defaultdict(float), "table_data": []}),
         "EUV_3400": defaultdict(lambda: {"budget": 0, "consumed": 0, "remaining": 0, "consumed_by_year": defaultdict(float), "table_data": []}),
@@ -1524,7 +1594,6 @@ def CURRENT_FY(request):
             if selected_factory_bu and factory_bu != selected_factory_bu:
                 continue
 
-            # Lot Turns
             lt_budget = BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).aggregate(total_budget=Sum("lot_turns_budget"))["total_budget"] or 0
             lt_consumed_qs = upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).values("jpn_ytd").annotate(consumed=Sum("lot_turns"))
             lt_consumed_by_year = {x["jpn_ytd"]: round(x["consumed"], 2) for x in lt_consumed_qs}
@@ -1544,7 +1613,6 @@ def CURRENT_FY(request):
                 "remaining": lt_remaining,
             })
 
-            # EUV 3400
             euv_budget = BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).aggregate(total_budget=Sum("euv3400_budget"))["total_budget"] or 0
             euv_qs = upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).values("jpn_ytd").annotate(consumed=Sum("EUV_3400"))
             euv_by_year = {x["jpn_ytd"]: round(x["consumed"], 2) for x in euv_qs}
@@ -1564,7 +1632,6 @@ def CURRENT_FY(request):
                 "remaining": euv_remaining,
             })
 
-            # EXE 5000
             exe_budget = BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).aggregate(total_budget=Sum("exe5000_budget"))["total_budget"] or 0
             exe_qs = upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).values("jpn_ytd").annotate(consumed=Sum("EXE_5000"))
             exe_by_year = {x["jpn_ytd"]: round(x["consumed"], 2) for x in exe_qs}
@@ -1586,7 +1653,6 @@ def CURRENT_FY(request):
 
     final_summary_data = {key: dict(value) for key, value in summary_data.items()}
 
-    # Chart Data
     monthly_data = (
         base_query.values("year", "month")
         .annotate(
@@ -1621,7 +1687,6 @@ def CURRENT_FY(request):
         monthly_exe_5000.append(round(exe, 2))
         cumulative_exe_5000.append(round(sum_exe, 2))
 
-    # AJAX response
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         table_html = render_to_string("partials/wbs_table.html", {
             "summary_data": final_summary_data,
@@ -1638,7 +1703,6 @@ def CURRENT_FY(request):
             "cumulative_exe_5000": cumulative_exe_5000,
         })
 
-    # Initial render
     return render(request, "pages/currentfy.html", {
         "factory_bu_choices": factory_bu_choices,
         "selected_factory_bu": selected_factory_bu,
@@ -1652,7 +1716,6 @@ def CURRENT_FY(request):
         "monthly_exe_5000": monthly_exe_5000,
         "cumulative_exe_5000": cumulative_exe_5000,
     })
-
 
 def department_lot_usage(request):
     from collections import defaultdict
@@ -1682,7 +1745,6 @@ def department_lot_usage(request):
 
     if not selected_factory_bu:
         selected_factory_bu = factory_bu_choices
-
     query = upload_data.objects.filter(jpn_ytd=selected_jpnfy)
 
     if selected_factory_bu:
@@ -1793,7 +1855,7 @@ def department_lot_usage(request):
         "factory_bu_choices": factory_bu_choices,
         "selected_factory_bu": [],
         "jpnfy_choices": jpnfy_choices,
-        "selected_jpnfy": selected_jpnfy,
+       "selected_jpnfy": selected_jpnfy,
         "categories": json.dumps(categories),
         "departments": departments,
         "cumulative_series_lt": json.dumps(cumulative_lt),
@@ -1815,22 +1877,17 @@ from django.db.models import Sum
 from .models import upload_data, BudgetData, WBS
 
 def executive_summary_data(request):
-    # Fetch distinct JPN_FY years for table headers
     unique_jpnfy = list(
         upload_data.objects.values_list("jpn_ytd", flat=True).distinct().order_by("jpn_ytd")
     )
-
-    # Fetch all WBS (unique)
     wbs_list = WBS.objects.all().order_by("name")
 
-    # Initialize summary data
     summary_data = {
         "lot_turns": defaultdict(lambda: {"budget": 0, "consumed": 0, "remaining": 0, "consumed_by_year": defaultdict(float), "table_data": []}),
         "EUV_3400": defaultdict(lambda: {"budget": 0, "consumed": 0, "remaining": 0, "consumed_by_year": defaultdict(float), "table_data": []}),
         "EXE_5000": defaultdict(lambda: {"budget": 0, "consumed": 0, "remaining": 0, "consumed_by_year": defaultdict(float), "table_data": []}),
     }
 
-    # Process each WBS
     for wbs in wbs_list:
         factory_bu_data = BudgetData.objects.filter(wbs=wbs).values("factory__name", "bu__name").distinct()
 
@@ -1838,28 +1895,17 @@ def executive_summary_data(request):
             factory_bu_name = f"{fb['factory__name']} - {fb['bu__name']}"
 
             # --- LOT TURNS ---
-            total_budget = (
-                BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"])
-                .aggregate(total_budget=Sum("lot_turns_budget"))["total_budget"] or 0
-            )
-            yearly_consumed = (
-                upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"])
-                .values("jpn_ytd")
-                .annotate(consumed=Sum("lot_turns"))
-                .order_by("jpn_ytd")
-            )
+            total_budget = BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).aggregate(total_budget=Sum("lot_turns_budget"))["total_budget"] or 0
+            yearly_consumed = upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).values("jpn_ytd").annotate(consumed=Sum("lot_turns")).order_by("jpn_ytd")
             consumed_by_year = {y["jpn_ytd"]: round(y["consumed"], 2) for y in yearly_consumed}
             total_consumed = sum(consumed_by_year.values())
             remaining = round(total_budget - total_consumed, 2)
 
-            # Store WBS total values
             summary_data["lot_turns"][wbs.name]["budget"] += total_budget
             summary_data["lot_turns"][wbs.name]["consumed"] += total_consumed
             summary_data["lot_turns"][wbs.name]["remaining"] += remaining
             for year, value in consumed_by_year.items():
                 summary_data["lot_turns"][wbs.name]["consumed_by_year"][year] += value
-
-            # Store table row
             summary_data["lot_turns"][wbs.name]["table_data"].append({
                 "order_segment": factory_bu_name,
                 "total_budget": round(total_budget, 2),
@@ -1869,16 +1915,8 @@ def executive_summary_data(request):
             })
 
             # --- EUV 3400 ---
-            euv_budget = (
-                BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"])
-                .aggregate(total_budget=Sum("euv3400_budget"))["total_budget"] or 0
-            )
-            yearly_euv_consumed = (
-                upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"])
-                .values("jpn_ytd")
-                .annotate(consumed=Sum("EUV_3400"))
-                .order_by("jpn_ytd")
-            )
+            euv_budget = BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).aggregate(total_budget=Sum("euv3400_budget"))["total_budget"] or 0
+            yearly_euv_consumed = upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).values("jpn_ytd").annotate(consumed=Sum("EUV_3400")).order_by("jpn_ytd")
             euv_consumed_by_year = {y["jpn_ytd"]: round(y["consumed"], 2) for y in yearly_euv_consumed}
             euv_total_consumed = sum(euv_consumed_by_year.values())
             euv_remaining = round(euv_budget - euv_total_consumed, 2)
@@ -1888,7 +1926,6 @@ def executive_summary_data(request):
             summary_data["EUV_3400"][wbs.name]["remaining"] += euv_remaining
             for year, value in euv_consumed_by_year.items():
                 summary_data["EUV_3400"][wbs.name]["consumed_by_year"][year] += value
-
             summary_data["EUV_3400"][wbs.name]["table_data"].append({
                 "order_segment": factory_bu_name,
                 "total_budget": round(euv_budget, 2),
@@ -1898,16 +1935,8 @@ def executive_summary_data(request):
             })
 
             # --- EXE 5000 ---
-            exe_budget = (
-                BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"])
-                .aggregate(total_budget=Sum("exe5000_budget"))["total_budget"] or 0
-            )
-            yearly_exe_consumed = (
-                upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"])
-                .values("jpn_ytd")
-                .annotate(consumed=Sum("EUV_3300"))
-                .order_by("jpn_ytd")
-            )
+            exe_budget = BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).aggregate(total_budget=Sum("exe5000_budget"))["total_budget"] or 0
+            yearly_exe_consumed = upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).values("jpn_ytd").annotate(consumed=Sum("EUV_3300")).order_by("jpn_ytd")
             exe_consumed_by_year = {y["jpn_ytd"]: round(y["consumed"], 2) for y in yearly_exe_consumed}
             exe_total_consumed = sum(exe_consumed_by_year.values())
             exe_remaining = round(exe_budget - exe_total_consumed, 2)
@@ -1917,7 +1946,6 @@ def executive_summary_data(request):
             summary_data["EXE_5000"][wbs.name]["remaining"] += exe_remaining
             for year, value in exe_consumed_by_year.items():
                 summary_data["EXE_5000"][wbs.name]["consumed_by_year"][year] += value
-
             summary_data["EXE_5000"][wbs.name]["table_data"].append({
                 "order_segment": factory_bu_name,
                 "total_budget": round(exe_budget, 2),
@@ -1926,11 +1954,8 @@ def executive_summary_data(request):
                 "remaining": exe_remaining,
             })
 
-    # Convert defaultdict to a normal dictionary
-    # Assuming summary_data is a dictionary that has been previously defined
     final_summary_data = {key.replace('_', ' '): dict(value) for key, value in summary_data.items()}
 
-    
     context = {
         "summary_data": final_summary_data,
         "jpnfy_years": unique_jpnfy,
@@ -1973,7 +1998,6 @@ def file_explorer(request):
     files = UploadedFile.objects.all()
 
     if request.method == 'POST':
-        # Unified handling of folder name from one field
         folder_name = request.POST.get('folder_name', 'default')
         folder, _ = Folder.objects.get_or_create(name=folder_name)
 
@@ -1986,7 +2010,6 @@ def file_explorer(request):
         'folders': folders,
         'files': files
     })
-
 
 def delete_file(request, file_id):
     file = UploadedFile.objects.get(id=file_id)
@@ -2036,7 +2059,7 @@ def summary_page(request):
                 .values("jpn_ytd")
                 .annotate(consumed=Sum("lot_turns"))
                 .order_by("jpn_ytd")
-            )
+           )
             consumed_by_year = {y["jpn_ytd"]: round(y["consumed"], 2) for y in yearly_consumed}
             total_consumed = sum(consumed_by_year.values())
             remaining = round(total_budget - total_consumed, 2)
@@ -2094,7 +2117,7 @@ def summary_page(request):
             yearly_exe_consumed = (
                 upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"])
                 .values("jpn_ytd")
-                .annotate(consumed=Sum("EUV_3300"))
+               .annotate(consumed=Sum("EUV_3300"))
                 .order_by("jpn_ytd")
             )
             exe_consumed_by_year = {y["jpn_ytd"]: round(y["consumed"], 2) for y in yearly_exe_consumed}
@@ -2128,12 +2151,9 @@ def summary_page(request):
 def presentations(request):
     """Renders the Presentations page with upload forms."""
     return render(request, 'pages/presentations.html')
-
 def handle_upload(request, upload_type):
-    """Handles file uploads based on type (CSV processing for different models)."""
     if request.method == 'POST' and 'csv_file' in request.FILES:
         csv_file = request.FILES['csv_file']
-
         if not csv_file.name.endswith('.csv'):
             return HttpResponse("Please upload a valid CSV file.")
 
@@ -2145,26 +2165,26 @@ def handle_upload(request, upload_type):
                 try:
                     LotStatusData.objects.create(
                         owner=row.get("owner"),
-                    factory=row.get("factory"),
-                    lot_id=row.get("lot_id"),
-                    hold_code=row.get("hold_code"),
-                    priority=int(row.get("priority")) if row.get("priority") else None,
-                    current_operation=row.get("current_operation"),
-                    oper1=row.get("oper1"),
-                    oper2=row.get("oper2"),
-                    oper3=row.get("oper3"),
-                    oper4=row.get("oper4"),
-                    oper5=row.get("oper5"),
-                    oper6=row.get("oper6"),
-                    oper7=row.get("oper7"),
-                    oper8=row.get("oper8"),
-                    oper9=row.get("oper9"),
-                    oper10=row.get("oper10"),
-                    oper11=row.get("oper11"),
-                    oper12=row.get("oper12"),
-                    oper13=row.get("oper13"),
-                    oper14=row.get("oper14"),
-                    oper15=row.get("oper15"),
+                        factory=row.get("factory"),
+                        lot_id=row.get("lot_id"),
+                        hold_code=row.get("hold_code"),
+                        priority=int(row.get("priority")) if row.get("priority") else None,
+                        current_operation=row.get("current_operation"),
+                        oper1=row.get("oper1"),
+                        oper2=row.get("oper2"),
+                        oper3=row.get("oper3"),
+                        oper4=row.get("oper4"),
+                        oper5=row.get("oper5"),
+                        oper6=row.get("oper6"),
+                        oper7=row.get("oper7"),
+                        oper8=row.get("oper8"),
+                        oper9=row.get("oper9"),
+                        oper10=row.get("oper10"),
+                        oper11=row.get("oper11"),
+                        oper12=row.get("oper12"),
+                        oper13=row.get("oper13"),
+                        oper14=row.get("oper14"),
+                        oper15=row.get("oper15"),
                     )
                 except ValueError:
                     print(f"Invalid data in row: {row}")
@@ -2180,23 +2200,14 @@ def handle_upload(request, upload_type):
                     euv3400_budget = float(row.get("Total EUV3400 Budget")) if row.get("Total EUV3400 Budget") else 0
                     exe5000_budget = float(row.get("Total EXE5000 Budget")) if row.get("Total EXE5000 Budget") else 0
 
-                    # Fetch existing objects or create a new one
                     wbs_obj, _ = WBS.objects.get_or_create(name=wbs_name)
+                    bu_obj = BU.objects.filter(name=bu_name).first() or BU.objects.create(name=bu_name)
+                    factory_obj = Factory.objects.filter(name=factory_name).first() or Factory.objects.create(name=factory_name)
 
-                    bu_obj = BU.objects.filter(name=bu_name).first()
-                    if not bu_obj:
-                        bu_obj = BU.objects.create(name=bu_name)
-
-                    factory_obj = Factory.objects.filter(name=factory_name).first()
-                    if not factory_obj:
-                        factory_obj = Factory.objects.create(name=factory_name)
-
-                    # Update or create BudgetData entry
                     BudgetData.objects.update_or_create(
                         wbs=wbs_obj, bu=bu_obj, factory=factory_obj,
                         defaults={"lot_turns_budget": lot_turns_budget, "euv3400_budget": euv3400_budget, "exe5000_budget": exe5000_budget}
                     )
-
                 except ValueError:
                     print(f"Invalid numerical value in row: {row}")
                     continue
@@ -2229,13 +2240,9 @@ def handle_upload(request, upload_type):
                     status = row.get("status")
 
                     if status.lower() == "completed":
-                        obj, created = CompletedForm_Data.objects.update_or_create(
-                            tmp_lot_id=tmp_lot_id, defaults=row
-                        )
+                        CompletedForm_Data.objects.update_or_create(tmp_lot_id=tmp_lot_id, defaults=row)
                     elif status.lower() == "active":
-                        obj, created = ActiveForm_Data.objects.update_or_create(
-                            tmp_lot_id=tmp_lot_id, defaults=row
-                        )
+                        ActiveForm_Data.objects.update_or_create(tmp_lot_id=tmp_lot_id, defaults=row)
                 except ValueError:
                     print(f"Invalid data in row: {row}")
                     continue
@@ -2263,13 +2270,11 @@ def handle_upload(request, upload_type):
                         print(f"Invalid date format in 'Year' field: {row}")
                         continue
 
-                    # Fetch related objects (optional, based on your models)
                     wbs_obj = WBS.objects.filter(name=wbs_name).first()
                     factory_obj = Factory.objects.filter(name=factory_name).first()
                     bu_obj = BU.objects.filter(name=bu_name).first()
                     department_obj = Department.objects.filter(name=department_name).first()
 
-                    # Convert no_of_samples to float
                     try:
                         no_of_samples = float(no_of_samples) if no_of_samples else None
                     except ValueError:
@@ -2303,9 +2308,5 @@ def handle_upload(request, upload_type):
                     print(f"Error in row {row}: {e}")
                     continue
 
-
         return HttpResponse(f"CSV data for {upload_type} has been uploaded successfully.")
-
     return HttpResponse("Invalid request")
-
-

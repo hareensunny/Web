@@ -35,11 +35,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'pages',
     'import_export',
     'django_filters',
     'multiselectfield',
     'django_tables2',
+    'pages.apps.PagesConfig',
 ]
 
 MIDDLEWARE = [

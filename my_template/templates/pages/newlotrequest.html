@@ -7,124 +7,139 @@
 {% endblock title %}
 
 {% block content %}
-<div class="card">
-    <div class="card-body">
-        <div class="border p-3 rounded">
-            <h6 class="mb-0 text-uppercase">Sample Request form</h6>
-            <hr/>
-            <form class="row g-3" enctype="multipart/form-data" method="post" action="{% url 'form_view' %}">
-                {% csrf_token %}
-                <div class="col-3">
-                    <label class="form-label" for="wbs">WBS <span class="text-danger">*</span></label>
-                    <select id="wbs" name="wbs" class="form-select mb-2" required>
-                        <option value="">Select WBS</option>
-                        {% for wbs in wbs_list %}
-                        <option value="{{ wbs.id }}">{{ wbs.name }}</option>
-                        {% endfor %}
-                    </select>
+<div class="row">
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body">
+                <div class="border p-3 rounded">
+                    <h6 class="mb-0 text-uppercase">Sample Request form</h6>
+                    <hr/>
+                    <form class="row g-3" enctype="multipart/form-data" method="post" action="{% url 'form_view' %}">
+                        {% csrf_token %}
+                        <div class="col-3">
+                            <label class="form-label" for="wbs">WBS <span class="text-danger">*</span></label>
+                            <select id="wbs" name="wbs" class="form-select mb-2" required>
+                                <option value="">Select WBS</option>
+                                {% for wbs in wbs_list %}
+                                <option value="{{ wbs.id }}">{{ wbs.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="factory">Factory <span class="text-danger">*</span></label>
+                            <select name="factory" id="factory" class="form-select mb-2" required>
+                                <option value="">Select a factory</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="bu">BU <span class="text-danger">*</span></label>
+                            <select name="bu" id="bu" class="form-select mb-2" required>
+                                <option value="">Select a BU</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="department">Department <span class="text-danger">*</span></label>
+                            <select name="department" id="department" class="form-select mb-2" required>
+                                <option value="">Select a department</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="project_group">Project Group <span class="text-danger">*</span></label>
+                            <select name="project_group" id="project_group" class="form-select mb-2" required>
+                                <option value="">Select a project group</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="requestor">Requestor <span class="text-danger">*</span></label>
+                            <select name="requestor" id="requestor" class="form-select mb-2" required>
+                                <option value="">Select a requestor</option>
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="litho">Litho <span class="text-danger">*</span></label>
+                            <select name="litho" id="litho" class="form-select mb-2" required>
+                                <option value="">Select a Litho</option>
+                                {% for litho in litho_list %}
+                                <option value="{{ litho.id }}">{{ litho.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="reticle">Reticle <span class="text-danger">*</span></label>
+                            <select name="reticle" id="reticle" class="form-select mb-2" required>
+                                <option value="">Select a reticle</option>
+                                {% for reticle in reticle_list %}
+                                <option value="{{ reticle.id }}">{{ reticle.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="integrator">Integrator <span class="text-danger">*</span></label>
+                            <select name="integrator" id="integrator" class="form-select mb-2" required>
+                                <option value="">Select an integrator</option>
+                                {% for integrator in integrator_list %}
+                                <option value="{{ integrator.id }}">{{ integrator.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="topic">Topic <span class="text-danger">*</span></label>
+                            <input type="text" name="topic" id="topic" class="form-control mb-2" required pattern="[a-zA-Z0-9 ]+" >
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="special_focus">Special Focus <span class="text-danger">*</span></label>
+                            <input type="text" name="special_focus" id="special_focus" class="form-control mb-2" required pattern="[a-zA-Z0-9 ]+">
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="request_type">Request Type <span class="text-danger">*</span></label>
+                            <select id="request_type" name="request_type" class="form-select mb-2" required>
+                                <option value="">Select Request Type</option>
+                                {% for request_type in request_type_list %}
+                                <option value="{{ request_type.id }}">{{ request_type.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="estimated_end_date">Estimated End Date <span class="text-danger">*</span></label>
+                            <input type="date" id="estimated_end_date" class="form-control mb-2" name="estimated_end_date" required>
+                        </div>
+                        <div class="col-3">
+                            <label class="form-label" for="no_of_samples">No. of Wafers <span class="text-danger">*</span></label>
+                            <input type="number" id="no_of_samples" class="form-control mb-2" name="no_of_samples" pattern="[0-9]+" min="1" max="23" required>
+                        </div>
+                        <!-- <div class="col-3">
+                            <label class="form-label" for="photo">Image <span class="text-danger">*</span></label>
+                            <select name="photo" id="photo" class="form-select mb-2" onchange="updateImagePreview(this)">
+                                <option value="" data-url="">Select an Image</option>
+                                {% for photo in photo_list %}
+                                <option value="{{ photo.id }}" data-url="{{ photo.name.url }}">{{ photo.name.url }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="image-preview" style="margin-top: 10px;">
+                                <img id="preview-img" src="" alt="Image Preview" style="width: 100px; height: 100px; display: none;" />
+                            </div>
+                        </div> -->
+                        <div class="col-3">
+                            <label class="form-label" for="url" required>URL</label>
+                            <input type="text" name="url" id="url" class="form-control mb-2"  >
+                        </div>
+                        <div class="text-center">
+                            <button class="btn btn-success" type="submit">Submit</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="col-3">
-                    <label class="form-label" for="factory">Factory <span class="text-danger">*</span></label>
-                    <select name="factory" id="factory" class="form-select mb-2" required>
-                        <option value="">Select a factory</option>
-                    </select>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="bu">BU <span class="text-danger">*</span></label>
-                    <select name="bu" id="bu" class="form-select mb-2" required>
-                        <option value="">Select a BU</option>
-                    </select>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="department">Department <span class="text-danger">*</span></label>
-                    <select name="department" id="department" class="form-select mb-2" required>
-                        <option value="">Select a department</option>
-                    </select>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="project_group">Project Group <span class="text-danger">*</span></label>
-                    <select name="project_group" id="project_group" class="form-select mb-2" required>
-                        <option value="">Select a project group</option>
-                    </select>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="requestor">Requestor <span class="text-danger">*</span></label>
-                    <select name="requestor" id="requestor" class="form-select mb-2" required>
-                        <option value="">Select a requestor</option>
-                    </select>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="litho">Litho <span class="text-danger">*</span></label>
-                    <select name="litho" id="litho" class="form-select mb-2" required>
-                        <option value="">Select a Litho</option>
-                        {% for litho in litho_list %}
-                        <option value="{{ litho.id }}">{{ litho.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="reticle">Reticle <span class="text-danger">*</span></label>
-                    <select name="reticle" id="reticle" class="form-select mb-2" required>
-                        <option value="">Select a reticle</option>
-                        {% for reticle in reticle_list %}
-                        <option value="{{ reticle.id }}">{{ reticle.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="integrator">Integrator <span class="text-danger">*</span></label>
-                    <select name="integrator" id="integrator" class="form-select mb-2" required>
-                        <option value="">Select an integrator</option>
-                        {% for integrator in integrator_list %}
-                        <option value="{{ integrator.id }}">{{ integrator.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="topic">Topic <span class="text-danger">*</span></label>
-                    <input type="text" name="topic" id="topic" class="form-control mb-2" required pattern="[a-zA-Z0-9 ]+" >
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="special_focus">Special Focus <span class="text-danger">*</span></label>
-                    <input type="text" name="special_focus" id="special_focus" class="form-control mb-2" required pattern="[a-zA-Z0-9 ]+">
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="request_type">Request Type <span class="text-danger">*</span></label>
-                    <select id="request_type" name="request_type" class="form-select mb-2" required>
-                        <option value="">Select Request Type</option>
-                        {% for request_type in request_type_list %}
-                        <option value="{{ request_type.id }}">{{ request_type.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="estimated_end_date">Estimated End Date <span class="text-danger">*</span></label>
-                    <input type="date" id="estimated_end_date" class="form-control mb-2" name="estimated_end_date" required>
-                </div>
-                <div class="col-3">
-                    <label class="form-label" for="no_of_samples">No. of Wafers <span class="text-danger">*</span></label>
-                    <input type="number" id="no_of_samples" class="form-control mb-2" name="no_of_samples" pattern="[0-9]+" min="1" max="23" required>
-                </div>
-                <!-- <div class="col-3">
-                    <label class="form-label" for="photo">Image <span class="text-danger">*</span></label>
-                    <select name="photo" id="photo" class="form-select mb-2" onchange="updateImagePreview(this)">
-                        <option value="" data-url="">Select an Image</option>
-                        {% for photo in photo_list %}
-                        <option value="{{ photo.id }}" data-url="{{ photo.name.url }}">{{ photo.name.url }}</option>
-                        {% endfor %}
-                    </select>
-                    <div id="image-preview" style="margin-top: 10px;">
-                        <img id="preview-img" src="" alt="Image Preview" style="width: 100px; height: 100px; display: none;" />
-                    </div>
-                </div> -->
-                <div class="col-3">
-                    <label class="form-label" for="url" required>URL</label>
-                    <input type="text" name="url" id="url" class="form-control mb-2"  >
-                </div>
-                <div class="text-center">
-                    <button class="btn btn-success" type="submit">Submit</button>
-                </div>
-            </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h4>WBS</h4>
+                <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Perspiciatis, voluptates?</p>
+                <h4>FActory</h4>
+                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab minima nobis illo non quia impedit?</p>
+
+            </div>
         </div>
     </div>
 </div>

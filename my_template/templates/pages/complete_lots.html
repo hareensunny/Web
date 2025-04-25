@@ -6,16 +6,36 @@
 {% endblock title %}
 
 {% block content %}
+
+<!-- Header and Factory Filter Cards -->
+<div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+    <h4 class="fw-bold text-primary">Completed Lots</h4>
+    <button class="btn btn-outline-secondary" id="reset-filters">Reset Filters</button>
+</div>
+
+<!-- Factory Filter Cards -->
+<!-- Empty container for factory cards -->
+<div class="d-flex flex-wrap gap-3 mb-4" id="factory-cards">
+    {% for factory in factories %}
+        <div class="card shadow-sm factory-card" data-factory="{{ factory }}" style="min-width: 100px; cursor: pointer;">
+            <div class="card-body text-center py-3">
+                <h5 class="mb-1 text-primary count-value">...</h5>
+                <span class="text-muted text-uppercase" style="font-size: 14px;">{{ factory }}</span>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
 <div class="d-flex">
     <!-- Toggle Button -->
     <button class="btn btn-primary btn-switcher1 shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
         <i class="bi bi-columns-gap me-0"></i>
     </button>
     <div class="table-responsive" style="flex-grow: 1;">
-        <table  class="table  table-bordered" style="width:100%">
+        <table id="example4"   class="table  table-bordered" style="width:100%">
             <thead class="bg-p text-white">
                 <tr>
-                    <th class="col-tmplotid">LOT_ID</th>
+                    <th class="col-tmplotid bg-p text-light">LOT_ID</th>
                     <th class="col-url">URL</th>
                     <th class="col-wbs">WBS</th>
                     <th class="col-projectgroup">Project Group</th>
@@ -187,6 +207,55 @@
             $('#example4').on('draw.dt', applyColumnVisibility);
         });
     </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Load counts via AJAX
+            fetch("/completed-lots/factory-counts/")
+                .then(response => response.json())
+                .then(data => {
+                    const factoryMap = {};
+                    data.forEach(item => {
+                        factoryMap[item.name] = item.count;
+                    });
+        
+                    // Update each card with the appropriate count
+                    document.querySelectorAll(".factory-card").forEach(card => {
+                        const name = card.getAttribute("data-factory").toUpperCase();
+                        const count = factoryMap[name] || 0;
+                        card.querySelector(".count-value").textContent = count;
+                    });
+                });
+        });
+        </script>
+        <script>
+            let selectedFactory = null;
+            </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const cards = document.querySelectorAll(".factory-card");
+                const resetBtn = document.getElementById("reset-filters");
+            
+                cards.forEach(card => {
+                    card.addEventListener("click", function () {
+                        selectedFactory = card.getAttribute("data-factory").toUpperCase().trim();
+                        $('#example4').DataTable().ajax.reload();  // 🔁 triggers reload with filter
+                    });
+                });
+            
+                if (resetBtn) {
+                    resetBtn.addEventListener("click", function () {
+                        selectedFactory = null;
+                        $('#example4').DataTable().ajax.reload();  // 🔁 removes filter
+                    });
+                }
+            });
+            </script>
+            
+            
+            
+    
+           
+    
     
     
 

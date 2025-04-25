@@ -11,20 +11,18 @@
     <button class="btn btn-outline-secondary" id="reset-filters">Reset Filters</button>
 </div>
 
-<!-- Factory Dashboard Cards -->
-<div class="row g-3 mb-4" id="factory-cards">
+<!-- Factory Filter Cards -->
+<div class="d-flex flex-wrap gap-3 mb-4" id="factory-cards">
     {% for factory in factories %}
-        <div class="col-auto">
-            <div class="card factory-card shadow-sm text-center px-3 py-2" data-factory="{{ factory.name }}" style="cursor: pointer; min-width: 120px;">
-                <div class="card-body p-2">
-                    <h5 class="text-primary mb-1">{{ factory.count }}</h5>
-                    <small class="text-muted text-uppercase">{{ factory.name }}</small>
-                </div>
+        <div class="card shadow-sm factory-card" data-factory="{{ factory.name }}" style="cursor:pointer; min-width: 120px;">
+            <div class="card-body text-center py-3">
+                <h5 class="mb-1 text-primary">{{ factory.count }}</h5>
+                <span class="text-muted text-uppercase" style="font-size: 14px;">{{ factory.name }}</span>
             </div>
         </div>
     {% endfor %}
 </div>
-<pre>{{ factories }}</pre>
+
 <div class="d-flex">
     <!-- Toggle Button -->
     <button class="btn btn-primary btn-switcher1 shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasScrolling" aria-controls="offcanvasScrolling">
@@ -234,29 +232,25 @@
             });
         });
     </script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const cards = document.querySelectorAll(".factory-card");
-            const rows = document.querySelectorAll("tbody tr");
-        
-            cards.forEach(card => {
-                card.addEventListener("click", function () {
-                    const selectedFactory = card.getAttribute("data-factory");
-                    rows.forEach(row => {
-                        row.style.display = (row.getAttribute("data-factory") === selectedFactory) ? "" : "none";
-                    });
+   <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const cards = document.querySelectorAll(".factory-card");
+        const rows = document.querySelectorAll("tbody tr");
+        const resetBtn = document.getElementById("reset-filters");
+
+        cards.forEach(card => {
+            card.addEventListener("click", function () {
+                const selectedFactory = card.getAttribute("data-factory");
+                rows.forEach(row => {
+                    row.style.display = (row.getAttribute("data-factory") === selectedFactory) ? "" : "none";
                 });
             });
-        
-            // Optional: Add a reset button to show all rows
-            const resetBtn = document.getElementById("reset-filters");
-            if (resetBtn) {
-                resetBtn.addEventListener("click", function () {
-                    rows.forEach(row => row.style.display = "");
-                });
-            }
         });
-        </script>
-    
+
+        resetBtn.addEventListener("click", function () {
+            rows.forEach(row => row.style.display = "");
+        });
+    });
+</script>
 
 {% endblock content %}

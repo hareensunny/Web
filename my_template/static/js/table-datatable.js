@@ -28,19 +28,32 @@ $(function() {
     } );
     
     $(document).ready(function () {
-        $('#example4').DataTable({
+        var selectedFactory = null;
+
+        var table = $('#example4').DataTable({
             processing: true,
             serverSide: true,
-          
+            pagingType: "simple_numbers", // Only "Previous 1 2 3 ... Next"
+            lengthChange: false,          // Removes "Show X entries"
+            searching: false,             // Removes search bar
+            info: true,                   // Shows "Showing 1 to 10 of ..."
             dom: '<"row align-items-center mb-2"<"col-sm-6"l><"col-sm-6 text-end"f>>' + 
          'rt' + 
          '<"row align-items-center mt-2"<"col-sm-6"i><"col-sm-6 text-end"p>>',
             ajax: {
                 url: "/completed-lots/data/",
-                type: "GET"
+                type: "GET",
+                data: function (d) {
+                    d.factory_filter = selectedFactory;
+                }
+            },
+            rowCallback: function(row, data) {
+                if (data.factory) {
+                    $(row).attr('data-factory', data.factory.toUpperCase().trim());  // 👈 Add data-factory attribute
+                }
             },
             columns: [
-                { data: 'tmp_lot_id', className: 'col-tmplotid bg-s' },
+                { data: 'tmp_lot_id', className: 'col-tmplotid ' },
                 { data: 'url', className: 'col-url' },
                 { data: 'wbs', className: 'col-wbs' },
                 { data: 'project_group', className: 'col-projectgroup' },
@@ -67,6 +80,18 @@ $(function() {
                 { data: 'duplo', className: 'col-duplo' },
                 { data: 'other', className: 'col-other' }
             ]
+        });
+
+        // Factory card click handler
+        $('.factory-card').on('click', function () {
+            selectedFactory = $(this).data('factory').toUpperCase().trim();
+            table.ajax.reload();
+        });
+
+        // Reset filters button handler
+        $('#reset-filters').on('click', function () {
+            selectedFactory = null;
+            table.ajax.reload();
         });
     });
     

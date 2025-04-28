@@ -26,16 +26,16 @@
                                 {% endfor %}
                                 <hr>
                                 <h5>Year</h5>
-                            
-                            
-                                {% for year in unique_years %}
-                                <input type="radio" name="chart_years" id="chart_year_{{ forloop.counter }}" value="{{ year.year }}" 
-                                {% if selected_years_chart and year.year|stringformat:"s" in selected_years_chart %}checked{% endif %}
-                                onchange="document.getElementById('chart-filter-form').submit();">
-                                <label for="chart_year_{{ forloop.counter }}">{{ year.year }}</label>
-                            
-
-{% endfor %}
+                        {% for year in unique_years %}
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="radio" name="chart_years" id="chart_year_{{ forloop.counter }}" value="{{ year.year }}"
+                                    {% if selected_years_chart and year.year|stringformat:"s" in selected_years_chart %}checked{% endif %}
+                                    onchange="document.getElementById('chart-filter-form').submit();">
+                                <label class="form-check-label" for="chart_year_{{ forloop.counter }}">
+                                    {{ year.year }}
+                                </label>
+                            </div>
+                        {% endfor %}
                 </div>
                             
                             
@@ -70,7 +70,7 @@
                                         {% endfor %}
                                     </tbody>
                                     <tfoot>
-                                        <tr>
+                                        <tr class="bg-p">
                                             <td>Total</td>
                                             {% for wbs in unique_wbs %}
                                                 <td>{{ wbs_totals|get_item:wbs|default:0|floatformat:2  }}</td>  <!-- Show total lot_turns for each WBS across all years -->
@@ -110,7 +110,7 @@
                                         {% endfor %}
                                     </tbody>
                                     <tfoot>
-                                        <tr>
+                                        <tr class="bg-p">
                                             <td>Total</td>
                                             {% for wbs in unique_wbs %}
                                                 <td>{{ wbs_totals2|get_item:wbs|default:0|floatformat:2 }}</td>  <!-- Show total lot_turns for each WBS across all years -->
@@ -124,7 +124,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="card text-center h-100 shadow">
-                            <h6 class="card-title fw-bolder py-2">EXE_5000 (in Hours)</h6>
+                            <h6 class="card-title fw-bolder py-2">EXE5000 in Hr's</h6>
                             <div class="card-body py-0">
                                 <table class="table table-bordered mb-0">
                                     <thead class="bg-p text-white">
@@ -150,7 +150,7 @@
                                         {% endfor %}
                                     </tbody>
                                     <tfoot>
-                                        <tr>
+                                        <tr class="bg-p">
                                             <td>Total</td>
                                             {% for wbs in unique_wbs %}
                                                 <td>{{ wbs_totals3|get_item:wbs|default:0|floatformat:2 }}</td>
@@ -353,11 +353,11 @@
                 var options = {
                     series: [
                         {
-                            name: "Cumulative EXE_5000 Budget",
+                            name: "Cumulative EXE5000 Budget",
                             data: {{ blue_line_values3|safe }} || []
                         },
                         {
-                            name: "Cumulative EXE_5000",
+                            name: "Cumulative EXE5000",
                             data: {{ cumulative_data3|safe }} || []
                         }
                     ],
@@ -405,7 +405,7 @@
                         }
                     },
                     title: {
-                        text: 'Cumulative EXE_5000 Usage',
+                        text: 'Cumulative EXE5000 Usage',
                         align: 'left'
                     },
                     xaxis: {
@@ -417,7 +417,7 @@
                     },
                     yaxis: {
                         title: {
-                            text: 'EXE_5000 Hours'
+                            text: 'EXE5000 Hours'
                         },
                         labels: {
                         formatter: function (val) {
@@ -453,7 +453,9 @@
                     for (var bu in exe500_chart_data[factory]) {
                         var category =  bu;
                         buCategories.push(category);
-            
+                        if (!factories.includes(factory)) {
+                            factories.push(factory);
+                        }
                         for (var wbs in exe500_chart_data[factory][bu]) {
                             if (!series[wbs]) {
                                 series[wbs] = [];
@@ -521,7 +523,7 @@
                         }
                     },
                     yaxis: {
-                        title: { text: 'EXE_5000 (Hours)' },
+                        title: { text: 'EXE5000 (Hours)' },
                         labels: {
                         formatter: function (val) {
                             return val.toFixed(0);
@@ -534,7 +536,7 @@
                         }
                     },
                     title: {
-                        text: 'EXE_5000 Usage by Factory and BU',
+                        text: 'EXE5000 Usage by Factory and BU',
                         align: 'center'
                     },
                     legend: {
@@ -1032,7 +1034,7 @@
                     },
                     yaxis: {
                         title: {
-                            text: 'EUV_3400'
+                            text: 'EUV3400'
                         },
                         labels: {
                         formatter: function (val) {
@@ -1048,7 +1050,7 @@
                         }
                     },
                     title: {
-                        text: 'EUV_3400 Usage by Factory and BU',
+                        text: 'EUV3400 Usage by Factory and BU',
                         align: 'center'
                     },
                     legend: {

@@ -1305,7 +1305,7 @@ def get_unique_years_and_wbs():
     """
     Retrieves unique years and WBS from the upload_data model.
     """
-    unique_years = upload_data.objects.values('year').distinct().order_by('-year')
+    unique_years = upload_data.objects.values('year').distinct().order_by('year')
     unique_wbs = upload_data.objects.values_list('wbs__name', flat=True).distinct().order_by('wbs__name')
     
     return unique_years, unique_wbs
@@ -1556,14 +1556,18 @@ from django.template.loader import render_to_string
 from .models import upload_data, BudgetData, WBS
 
 def CURRENT_FY(request):
-    unique_factory_bu = (
+    # STEP 1: Always load full list of Factory-BU
+    all_factory_bu = (
         upload_data.objects.values_list("factory__name", "bu__name")
         .distinct()
         .order_by("factory__name", "bu__name")
     )
-    factory_bu_choices = [f"{f} - {b}" for f, b in unique_factory_bu if f and b]
+    factory_bu_choices = [f"{f} - {b}" for f, b in all_factory_bu if f and b]
+
+    # STEP 2: Get selected factory-bu from request
     selected_factory_bu = request.GET.get("factory_bu")
 
+    # STEP 3: Get unique JPN fiscal years
     unique_jpnfy = list(
         upload_data.objects.values_list("jpn_ytd", flat=True)
         .distinct()
@@ -1571,7 +1575,10 @@ def CURRENT_FY(request):
     )
     highest_jpnfy = unique_jpnfy[-1] if unique_jpnfy else None
 
+    # STEP 4: Base query - current FY data
     base_query = upload_data.objects.filter(jpn_ytd=highest_jpnfy)
+
+    # STEP 5: Apply filter if factory_bu selected
     if selected_factory_bu:
         try:
             factory, bu = selected_factory_bu.split(" - ")
@@ -1579,6 +1586,7 @@ def CURRENT_FY(request):
         except ValueError:
             pass
 
+    # STEP 6: Prepare WBS summary data
     summary_data = {
         "lot_turns": defaultdict(lambda: {"budget": 0, "consumed": 0, "remaining": 0, "consumed_by_year": defaultdict(float), "table_data": []}),
         "EUV_3400": defaultdict(lambda: {"budget": 0, "consumed": 0, "remaining": 0, "consumed_by_year": defaultdict(float), "table_data": []}),
@@ -1594,6 +1602,7 @@ def CURRENT_FY(request):
             if selected_factory_bu and factory_bu != selected_factory_bu:
                 continue
 
+            # Lot Turns
             lt_budget = BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).aggregate(total_budget=Sum("lot_turns_budget"))["total_budget"] or 0
             lt_consumed_qs = upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).values("jpn_ytd").annotate(consumed=Sum("lot_turns"))
             lt_consumed_by_year = {x["jpn_ytd"]: round(x["consumed"], 2) for x in lt_consumed_qs}
@@ -1613,6 +1622,7 @@ def CURRENT_FY(request):
                 "remaining": lt_remaining,
             })
 
+            # EUV_3400
             euv_budget = BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).aggregate(total_budget=Sum("euv3400_budget"))["total_budget"] or 0
             euv_qs = upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).values("jpn_ytd").annotate(consumed=Sum("EUV_3400"))
             euv_by_year = {x["jpn_ytd"]: round(x["consumed"], 2) for x in euv_qs}
@@ -1622,8 +1632,8 @@ def CURRENT_FY(request):
             summary_data["EUV_3400"][wbs.name]["budget"] += euv_budget
             summary_data["EUV_3400"][wbs.name]["consumed"] += euv_total
             summary_data["EUV_3400"][wbs.name]["remaining"] += euv_remaining
-            for year, val in euv_by_year.items():
-                summary_data["EUV_3400"][wbs.name]["consumed_by_year"][year] += val
+            for year, value in euv_by_year.items():
+                summary_data["EUV_3400"][wbs.name]["consumed_by_year"][year] += value
             summary_data["EUV_3400"][wbs.name]["table_data"].append({
                 "order_segment": factory_bu,
                 "total_budget": round(euv_budget, 2),
@@ -1632,6 +1642,7 @@ def CURRENT_FY(request):
                 "remaining": euv_remaining,
             })
 
+            # EXE_5000
             exe_budget = BudgetData.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).aggregate(total_budget=Sum("exe5000_budget"))["total_budget"] or 0
             exe_qs = upload_data.objects.filter(wbs=wbs, factory__name=fb["factory__name"], bu__name=fb["bu__name"]).values("jpn_ytd").annotate(consumed=Sum("EXE_5000"))
             exe_by_year = {x["jpn_ytd"]: round(x["consumed"], 2) for x in exe_qs}
@@ -1641,8 +1652,8 @@ def CURRENT_FY(request):
             summary_data["EXE_5000"][wbs.name]["budget"] += exe_budget
             summary_data["EXE_5000"][wbs.name]["consumed"] += exe_total
             summary_data["EXE_5000"][wbs.name]["remaining"] += exe_remaining
-            for year, val in exe_by_year.items():
-                summary_data["EXE_5000"][wbs.name]["consumed_by_year"][year] += val
+            for year, value in exe_by_year.items():
+                summary_data["EXE_5000"][wbs.name]["consumed_by_year"][year] += value
             summary_data["EXE_5000"][wbs.name]["table_data"].append({
                 "order_segment": factory_bu,
                 "total_budget": round(exe_budget, 2),
@@ -1651,8 +1662,16 @@ def CURRENT_FY(request):
                 "remaining": exe_remaining,
             })
 
-    final_summary_data = {key: dict(value) for key, value in summary_data.items()}
+    # Step 7: Clean summary_data keys
+    final_summary_data = {}
+    for key, value in summary_data.items():
+        if key == "lot_turns":
+            new_key = "lot turns"
+        else:
+            new_key = key.replace('_', '')
+        final_summary_data[new_key] = dict(value)
 
+    # Step 8: Prepare monthly data
     monthly_data = (
         base_query.values("year", "month")
         .annotate(
@@ -1687,10 +1706,11 @@ def CURRENT_FY(request):
         monthly_exe_5000.append(round(exe, 2))
         cumulative_exe_5000.append(round(sum_exe, 2))
 
+    # Step 9: If AJAX request, send partial response
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         table_html = render_to_string("partials/wbs_table.html", {
             "summary_data": final_summary_data,
-            "jpnfy_years": unique_jpnfy
+            "jpnfy_years": unique_jpnfy,
         })
         return JsonResponse({
             "table_html": table_html,
@@ -1703,6 +1723,7 @@ def CURRENT_FY(request):
             "cumulative_exe_5000": cumulative_exe_5000,
         })
 
+    # Step 10: Otherwise, normal page load
     return render(request, "pages/currentfy.html", {
         "factory_bu_choices": factory_bu_choices,
         "selected_factory_bu": selected_factory_bu,
@@ -1868,7 +1889,7 @@ def department_lot_usage(request):
         "department_totals": dict(department_totals),
         "month_totals": dict(month_totals),
         "grand_total": grand_totals,
-         "metrics": ["lot_turns", "euv_3400", "exe_5000"],  # ✅ Add this
+         "metrics": ["lot_ turns", "euv_3400", "exe_5000"],  # ✅ Add this
     })
 
 from collections import defaultdict
@@ -1954,7 +1975,13 @@ def executive_summary_data(request):
                 "remaining": exe_remaining,
             })
 
-    final_summary_data = {key.replace('_', ' '): dict(value) for key, value in summary_data.items()}
+    final_summary_data = {}
+    for key, value in summary_data.items():
+        if key == "lot_turns":
+            new_key = "lot turns"  # lot_turns -> lot turns (space)
+        else:
+            new_key = key.replace('_', '')  # EUV_3400 -> EUV3400, EXE_5000 -> EXE5000
+        final_summary_data[new_key] = dict(value)
 
     context = {
         "summary_data": final_summary_data,
@@ -2139,12 +2166,18 @@ def summary_page(request):
             })
 
     # Convert defaultdict to a normal dictionary
-    final_summary_data = {key: dict(value) for key, value in summary_data.items()}
-    
-    context = {
-        "summary_data": final_summary_data,
-        "jpnfy_years": unique_jpnfy,
-    }
+    final_summary_data = {}
+    for key, value in summary_data.items():
+        if key == "lot_turns":
+            new_key = "lot turns"  # lot_turns -> lot turns (space)
+        else:
+            new_key = key.replace('_', '')  # EUV_3400 -> EUV3400, EXE_5000 -> EXE5000
+        final_summary_data[new_key] = dict(value)
+        
+        context = {
+            "summary_data": final_summary_data,
+            "jpnfy_years": unique_jpnfy,
+        }
 
     return render(request, 'pages/summary.html', context)
 

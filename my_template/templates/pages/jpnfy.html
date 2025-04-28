@@ -29,7 +29,7 @@
                         
                         
                         <hr>
-                        <h5>JPN_FY</h5>
+                        <h5>JPNFY</h5>
                         {% for jpnfy in unique_jpnfy %}
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="chart_jpnfy" value="{{ jpnfy }}"
@@ -55,12 +55,12 @@
         <div class="col-md-11">
             <div class="row">
                 <div class="col-md-4 mb-3">
-                    <div class="card h-100 shadow">
-                        <div class="card-body">
-                            <table class="table table-bordered">
+                    <div class="card h-100 shadow mb-1">
+                        <div class="card-body pb-0">
+                            <table class="table table-bordered pb-0 mb-0">
                                 <thead class="bg-p text-white">
                                     <tr >
-                                        <th>Factory + BU</th>
+                                        <th>Factory  BU</th>
                                         <th> Lot Turns</th>
                                         
                                     </tr>
@@ -69,22 +69,22 @@
                                     {% for factory, data in table_data.items %}
                                         <!-- Factory Row -->
                                         <tr>
-                                            <td class="bg-s " ><strong>{{ factory }}</strong></td>
-                                            <td><strong>{{ data.total_factory_lot_turns|floatformat:2 }}</strong></td>
+                                            <td class="bg-s text-start" ><strong>{{ factory }}</strong></td>
+                                            <td class="text-start"><strong>{{ data.total_factory_lot_turns|floatformat:2 }}</strong></td>
                                             
                                         </tr>
                                         <!-- BU Rows under the Factory -->
                                         {% for bu, bu_lot_turns in data.bus.items %}
                                         <tr>
-                                            <td class="bg-s">&emsp;{{ bu }}</td>
+                                            <td class="bg-s text-center fw-normal">&emsp;{{ bu }}</td>
                                             
-                                            <td>{{ bu_lot_turns|floatformat:2 }}</td>
+                                            <td class="text-center">{{ bu_lot_turns|floatformat:2 }}</td>
                                         </tr>
                                         {% endfor %}
                                     {% endfor %}
                                 </tbody>
                                 <tfoot>
-                                    <tr>
+                                    <tr class="bg-p">
                                         <th>Total</th>
                                         <th colspan="2">{{ total_lot_turns|floatformat:2 }}</th>
                                     </tr>
@@ -94,16 +94,16 @@
                     </div>
                 </div>
                 <div class="col-md-8 mb-3">
-                    <div class="card h-100 shadow">
+                    <div class="card h-100 shadow mb-1">
                         <div class="card-body">
-                            <div id="lot-turn-chart" ></div>
+                            <div id="lot-turn-chart" style="height: 100%;" ></div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card h-100 shadow">
-                        <div class="card-body">
-                            <table class="table table-bordered">
+                    <div class="card h-100 shadow mb-1">
+                        <div class="card-body pb-0">
+                            <table class="table table-bordered pb-0 mb-0">
                                 <thead class="bg-p">
                                     <tr>
                                         <th>Month</th>
@@ -119,7 +119,7 @@
                                     {% endfor %}
                                 </tbody>
                                 <tfoot>
-                                    <tr>
+                                    <tr class="bg-p">
                                         <th>Grand Total</th>
                                         <th>{{ total_lot_turns|floatformat:2 }}</th>
                                     </tr>
@@ -131,9 +131,9 @@
                 
                
                 <div class="col-md-8">
-                    <div class="card h-100 shadow">
+                    <div class="card h-100 shadow mb-1">
                         <div class="card-body">
-                            <div id="lot-turn-chart1" ></div>
+                            <div id="lot-turn-chart1" style="height: 100%;" ></div>
                         </div>
                     </div>
                 </div>
@@ -179,7 +179,7 @@
         series: seriesData,
         chart: {
             type: 'bar',
-            height: 400,
+            height: '100%',
             stacked: true,
         },
         plotOptions: {
@@ -258,7 +258,7 @@
         series: month_seriesData,
         chart: {
             type: 'bar',
-            height: 400,
+            height: '100%',
             stacked: true,
         },
         plotOptions: {

@@ -75,17 +75,6 @@ a {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
 .dropdown-toggle-nocaret:after {
 	display: none
 }
@@ -155,7 +144,7 @@ a {
 	background: #ffff;
 	position: absolute;
 	top: -6px;
-	right: 16px;
+	left: 16px;
 	transform: rotate(45deg);
 	border-top: 1px solid #ddd;
 	border-left: 1px solid #ddd
@@ -1862,10 +1851,14 @@ a {
   }
   .bg-p{
 	background-color:#00a9e0 !important;
+	color:#fff !important;
+	font-weight:700;
 }
 .bg-s{
-	background-color:#f0f0f0 !important;
+	background-color:#dcdcdc !important;
 border-color: #000 !important;
+font-weight:700;
+
 }
 .factory-card:hover {
 	box-shadow: 0 0 10px rgba(0, 123, 255, 0.2);
@@ -1937,4 +1930,7 @@ table.dataTable .edit-action a:hover {
 .factory-card.active {
 	border: 2px solid #007bff;
 	background-color: #e6f0ff;
+  }
+  .dropdown-menu[data-bs-popper]{
+	right:0 !important;
   }

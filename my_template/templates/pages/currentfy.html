@@ -1,4 +1,3 @@
-<!-- currentfy.html -->
 {% extends 'base.html' %}
 {% load static %}
 {% load custom_filters %}
@@ -12,14 +11,26 @@
   <h2 class="text-center">Current FY Summary</h2>
 
   <div class="row">
-    <!-- Filter -->
-    <div class="col-md-2">
-      <div class="card shadow p-3 fixed-filter">
-        <h5>Factory-BU</h5>
-        <form id="filter-form">
+    <!-- Filter Section -->
+    <div class="col-md-1">
+      <div class="card shadow py-3 px-1  fixed-filter">
+        <h5>Factory BU</h5>
+        <form id="filter-form" method="get" action="">
+          
+          <!-- Select All Option -->
+          <div class="form-check pe-3 mb-2">
+            <input class="form-check-input factory-bu-checkbox" type="radio" name="factory_bu" value=""
+              {% if not selected_factory_bu %}checked{% endif %}
+              onchange="document.getElementById('filter-form').submit();">
+            <label class="form-check-label">All</label>
+          </div>
+
+          <!-- Dynamic Factory-BU options -->
           {% for factory_bu in factory_bu_choices %}
-          <div class="form-check pe-3">
-            <input class="form-check-input factory-bu-checkbox" type="radio" name="factory_bu" value="{{ factory_bu }}" {% if factory_bu == selected_factory_bu %}checked{% endif %}>
+          <div class="form-check pe-3 mb-2">
+            <input class="form-check-input factory-bu-checkbox" type="radio" name="factory_bu" value="{{ factory_bu }}"
+              {% if factory_bu == selected_factory_bu %}checked{% endif %}
+              onchange="document.getElementById('filter-form').submit();">
             <label class="form-check-label">{{ factory_bu }}</label>
           </div>
           {% endfor %}
@@ -27,8 +38,8 @@
       </div>
     </div>
 
-    <!-- Content -->
-    <div class="col-md-10">
+    <!-- Main Content (Charts + Table) -->
+    <div class="col-md-11">
       <div class="row">
         <!-- Charts -->
         <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="cumulative-lot-turns-chart"></div></div></div></div>
@@ -38,20 +49,21 @@
         <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="cumulative-exe-5000-chart"></div></div></div></div>
         <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="monthly-exe-5000-chart"></div></div></div></div>
 
-        <!-- Tables -->
-        <div id="table-container">
+        <!-- Table Section -->
+        <div id="table-container" class="mt-4">
           {% include 'partials/wbs_table.html' with summary_data=summary_data jpnfy_years=jpnfy_years %}
         </div>
-        
       </div>
     </div>
   </div>
 </div>
 
+<!-- JS Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<!-- Dynamic JS for AJAX Filtering -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const checkboxes = document.querySelectorAll(".factory-bu-checkbox");
   let charts = {};
 
   function fetchData() {
@@ -63,81 +75,31 @@ document.addEventListener("DOMContentLoaded", function () {
     })
     .then(response => response.json())
     .then(data => {
+      // Update table
       document.getElementById("table-container").innerHTML = data.table_html;
+      // Update charts
       updateCharts(data);
     });
   }
 
-  checkboxes.forEach(cb => cb.addEventListener("change", fetchData));
+  // Attach onchange to all radio buttons
+  document.querySelectorAll(".factory-bu-checkbox").forEach(cb => {
+    cb.addEventListener("change", fetchData);
+  });
 
+  // Chart rendering functions
   function renderChart(selector, title, type, series, categories) {
     if (charts[selector]) charts[selector].destroy();
     charts[selector] = new ApexCharts(document.querySelector(selector), {
       series: series,
-      
-      
-      
+      chart: { type: type, height: 400, parentHeightOffset: 0, toolbar: { show: false } },
       title: { text: title, align: "center" },
-      chart: {
-        type: type,
-        height: 400,
-        parentHeightOffset: 0,
-        dropShadow: {
-          enabled: true,
-          color: '#000',
-          top: 18,
-          left: 7,
-          blur: 10,
-          opacity: 0.2
-        },
-        zoom: { enabled: false },
-        toolbar: { show: false }
-      },
+      xaxis: { categories: categories, tickPlacement: 'between' },
+      yaxis: { labels: { formatter: val => val.toFixed(0) }},
+      tooltip: { y: { formatter: val => val.toFixed(2) }},
+      grid: { borderColor: '#e7e7e7', row: { colors: ['#fafafa', 'transparent'], opacity: 0.5 }},
       colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
-      stroke: {
-        width: [3, 1],
-        curve: "straight",
-        dashArray: [0, 5]
-      },
-      grid: {
-        borderColor: '#e7e7e7',
-        row: {
-          colors: ['#fafafa', 'transparent'],
-          opacity: 0.5
-        },
-        padding: { bottom: 0 }
-      },
-      markers: {
-        size: [1, 3],
-        colors: ["#00a9e0", "#da1884"],
-        strokeWidth: 1,
-        hover: { size: 5 }
-      },
-      
-      tooltip: {
-        theme: "light",
-        y: {
-          formatter: function (val) {
-            return val.toFixed(2);
-          }
-        }
-      },
-      xaxis: {
-        categories: categories,
-                    tickPlacement: 'between',
-                    
-                    
-                    },
-                    yaxis: {
-                    
-                    labels: {
-                        formatter: function (val) {
-                            return val.toFixed(0);
-                        }
-                    }
-                    
-                    },
-                    legend: { position: 'top' }
+      legend: { position: 'top' }
     });
     charts[selector].render();
   }
@@ -149,32 +111,33 @@ document.addEventListener("DOMContentLoaded", function () {
   function updateCharts(data) {
     renderChart("#cumulative-lot-turns-chart", "Cumulative Lot Turn Usage", "line", [
       { name: "Cumulative LT", data: data.cumulative_lot_turns },
-      { name: "Reference", data: referenceLine(data.cumulative_lot_turns), strokeDashArray: 5 }
+      { name: "Reference", data: referenceLine(data.cumulative_lot_turns) }
     ], data.categories);
 
     renderChart("#monthly-lot-turns-chart", "Monthly Lot Turns", "bar", [
       { name: "Monthly LT", data: data.monthly_lot_turns }
     ], data.categories);
 
-    renderChart("#cumulative-euv-3400-chart", "Cumulative EUV 3400 Usage", "line", [
+    renderChart("#cumulative-euv-3400-chart", "Cumulative EUV3400 Usage", "line", [
       { name: "Cumulative EUV", data: data.cumulative_euv_3400 },
-      { name: "Reference", data: referenceLine(data.cumulative_euv_3400), strokeDashArray: 5 }
+      { name: "Reference", data: referenceLine(data.cumulative_euv_3400) }
     ], data.categories);
 
-    renderChart("#monthly-euv-3400-chart", "Monthly EUV 3400 Usage", "bar", [
+    renderChart("#monthly-euv-3400-chart", "Monthly EUV3400 Usage", "bar", [
       { name: "Monthly EUV", data: data.monthly_euv_3400 }
     ], data.categories);
 
-    renderChart("#cumulative-exe-5000-chart", "Cumulative EXE 5000 Usage", "line", [
+    renderChart("#cumulative-exe-5000-chart", "Cumulative EXE5000 Usage", "line", [
       { name: "Cumulative EXE", data: data.cumulative_exe_5000 },
-      { name: "Reference", data: referenceLine(data.cumulative_exe_5000), strokeDashArray: 5 }
+      { name: "Reference", data: referenceLine(data.cumulative_exe_5000) }
     ], data.categories);
 
-    renderChart("#monthly-exe-5000-chart", "Monthly EXE 5000 Usage", "bar", [
+    renderChart("#monthly-exe-5000-chart", "Monthly EXE5000 Usage", "bar", [
       { name: "Monthly EXE", data: data.monthly_exe_5000 }
     ], data.categories);
   }
 
+  // Initial load
   fetchData();
 });
 </script>

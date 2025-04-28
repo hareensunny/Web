@@ -8,8 +8,8 @@
 <div class="container-fluid mt-2">
     <!-- Filters -->
     <div class="row">
-        <div class="col-md-2">
-            <div class="card p-3 shadow fixed-filter">
+        <div class="col-md-1">
+            <div class="card py-3 px-1 shadow fixed-filter">
                 <form id="filter-form">
                     <h5>JPN FY</h5>
                     {% for jpn in jpnfy_choices %}
@@ -19,7 +19,7 @@
                     </div>
                     {% endfor %}
 
-                    <h5>Factory_BU Filter</h5>
+                    <h5>Factory BU</h5>
                     <div class="form-check pe-3">
                         <input class="form-check-input" type="checkbox" id="select-all">
                         <label class="form-check-label">Select All</label>
@@ -36,7 +36,7 @@
         </div>
 
         <!-- Charts + Tables -->
-        <div class="col-md-10">
+        <div class="col-md-11">
             <div class="row">
                 <!-- Chart Containers -->
                 <div class="col-md-6"><div class="card shadow"><div class="card-body"><div id="cumulative-chart"></div></div></div></div>
@@ -67,11 +67,16 @@
         let charts = {};
     
         function fetchData() {
-            let selectedValues = [];
-            document.querySelectorAll(".factory-bu-checkbox:checked").forEach(cb => selectedValues.push(cb.value));
-            let selectedJpnfy = document.querySelector(".jpnfy-radio:checked")?.value || "{{ selected_jpnfy }}";
-    
-            fetch("{% url 'department_lot_usage' %}?" + new URLSearchParams({ jpnfy: selectedJpnfy, factory_bu: selectedValues }), {
+            let params = new URLSearchParams();
+            const selectedJpnfy = document.querySelector(".jpnfy-radio:checked")?.value || "{{ selected_jpnfy }}";
+
+            params.append('jpnfy', selectedJpnfy);
+
+            document.querySelectorAll(".factory-bu-checkbox:checked").forEach(cb => {
+                params.append('factory_bu', cb.value);  // append each factory_bu separately
+            });
+
+            fetch("{% url 'department_lot_usage' %}?" + params.toString(), {
                 headers: { "X-Requested-With": "XMLHttpRequest" }
             })
             .then(response => response.json())
@@ -80,16 +85,16 @@
                 updateCharts(data);
             });
         }
-    
+
         function updateCharts(data) {
     renderChart("#cumulative-chart", "Cumulative Lot Turns", "line", data.cumulative_series_lt, data.categories);
     renderChart("#stacked-bar-chart", "Monthly Lot Turns", "bar", data.monthly_series_lt, data.categories, true);
 
-    renderChart("#cumulative-euv-chart", "Cumulative EUV 3400", "line", data.cumulative_series_euv, data.categories);
-    renderChart("#stacked-euv-chart", "Monthly EUV 3400", "bar", data.monthly_series_euv, data.categories, true);
+    renderChart("#cumulative-euv-chart", "Cumulative EUV3400", "line", data.cumulative_series_euv, data.categories);
+    renderChart("#stacked-euv-chart", "Monthly EUV3400", "bar", data.monthly_series_euv, data.categories, true);
 
-    renderChart("#cumulative-exe-chart", "Cumulative EXE 5000", "line", data.cumulative_series_exe, data.categories);
-    renderChart("#stacked-exe-chart", "Monthly EXE 5000", "bar", data.monthly_series_exe, data.categories, true);
+    renderChart("#cumulative-exe-chart", "Cumulative EXE5000", "line", data.cumulative_series_exe, data.categories);
+    renderChart("#stacked-exe-chart", "Monthly EXE5000", "bar", data.monthly_series_exe, data.categories, true);
 }
         function renderChart(selector, title, type, series, categories, stacked = false) {
             if (charts[selector]) charts[selector].destroy();

@@ -2,6 +2,50 @@ from django import forms
 from django.contrib import admin
 from .models import WBS,ActiveForm_Data, Factory, BU, Department, ProjectGroup, Requestor, Reticle, Integrator, RequestType, Lot, Litho, Location,CompletedForm_Data,upload_data
 from import_export.admin import ImportExportModelAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
+
+class CustomUserCreationForm(forms.ModelForm):
+    password1 = forms.CharField(label='Password', required=False, widget=forms.PasswordInput)
+    password2 = forms.CharField(label='Password confirmation', required=False, widget=forms.PasswordInput)
+
+    class Meta:
+        model = User
+        fields = ('username', 'email')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 or password2:
+            if password1 != password2:
+                raise forms.ValidationError("Passwords do not match.")
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data.get("password1")
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        if commit:
+            user.save()
+        return user
+
+class CustomUserAdmin(BaseUserAdmin):
+    add_form = CustomUserCreationForm
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2'),
+        }),
+    )
+
+# Unregister the default User admin and register the customized one
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)
 
 admin.site.register(WBS)
 admin.site.register(Factory)

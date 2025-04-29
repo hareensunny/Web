@@ -54,7 +54,7 @@
         <!-- Table Section -->
         <div class="col-md-11">
             <div class="row">
-                <div class="col-md-4 mb-3">
+                <div class="col-md-2 mb-3">
                     <div class="card h-100 shadow mb-1">
                         <div class="card-body pb-0">
                             <table class="table table-bordered pb-0 mb-0">
@@ -93,21 +93,21 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-8 mb-3">
+                <div class="col-md-10 mb-3">
                     <div class="card h-100 shadow mb-1">
                         <div class="card-body">
                             <div id="lot-turn-chart" style="height: 100%;" ></div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2">
                     <div class="card h-100 shadow mb-1">
                         <div class="card-body pb-0">
                             <table class="table table-bordered pb-0 mb-0">
                                 <thead class="bg-p">
                                     <tr>
                                         <th>Month</th>
-                                        <th>Sum of Total_Lots</th>
+                                        <th>Total Lots</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -130,7 +130,7 @@
                 </div>
                 
                
-                <div class="col-md-8">
+                <div class="col-md-10">
                     <div class="card h-100 shadow mb-1">
                         <div class="card-body">
                             <div id="lot-turn-chart1" style="height: 100%;" ></div>
@@ -226,83 +226,117 @@
     var chart = new ApexCharts(document.querySelector("#lot-turn-chart"), options);
     chart.render();
 </script>
-
 <script>
-    // Chart Data from Django Context
     var chartData1 = {{ chart_data1|safe }};
-    var month_seriesData = [];
+
+    var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
     var month_categories = [];
+    var month_seriesData = [];
+    var grouped_years = {};  // { "2023": count }
 
-    // Prepare data for ApexCharts
-    for (var month in chartData1) {
-        month_categories.push(month); // Add factory to x-axis categories
-        for (var factory in chartData1[month]) {
-            let seriesIndex = month_seriesData.findIndex(series => series.name === factory);
-            if (seriesIndex === -1) {
-                month_seriesData.push({ name: factory, data: Array(month_categories.length).fill(0) });
-                seriesIndex = month_seriesData.length - 1;
-            }
-            month_seriesData[seriesIndex].data[month_categories.indexOf(month)] = chartData1[month][factory];
+    // Build data
+    for (var monthYear in chartData1) {
+    var [month, year] = monthYear.split('/');
+    var monthIndex = parseInt(month) - 1;
+
+    // Only show month name
+    var label = monthNames[monthIndex];
+    month_categories.push(label);
+
+    // Count months per year for grouping
+    if (!grouped_years[year]) grouped_years[year] = 0;
+    grouped_years[year]++;
+
+    for (var factory in chartData1[monthYear]) {
+        let idx = month_seriesData.findIndex(s => s.name === factory);
+        if (idx === -1) {
+            month_seriesData.push({ name: factory, data: Array(month_categories.length).fill(0) });
+            idx = month_seriesData.length - 1;
         }
+        month_seriesData[idx].data[month_categories.length - 1] = chartData1[monthYear][factory];
     }
+}
 
-    // Align data with missing categories
+    // Normalize data length for all series
     month_seriesData.forEach(series => {
         while (series.data.length < month_categories.length) {
             series.data.push(0);
         }
     });
 
-    // Configure ApexCharts
+    // Prepare ApexCharts xaxis.group structure
+    var xaxisGroups = Object.keys(grouped_years).map(year => {
+        return {
+            title: year,
+            cols: grouped_years[year]
+        };
+    });
+
     var options = {
         series: month_seriesData,
         chart: {
             type: 'bar',
             height: '100%',
-            stacked: true,
+            stacked: true
         },
         plotOptions: {
             bar: {
                 horizontal: false,
-                columnWidth: '60%',
+                columnWidth: '60%'
             }
         },
         dataLabels: {
             enabled: true,
-            formatter: function (val) {
-                return val ? val.toFixed(2) : "";
-            }
+            formatter: val => val ? val.toFixed(2) : ""
         },
         xaxis: {
             categories: month_categories,
+            group: {
+                style: {
+                    fontSize: '14px',
+                    fontWeight: 600
+                },
+                groups: xaxisGroups  // 👈 Group years
+            },
+            labels: {
+                rotate: -45,
+                style: {
+                    fontSize: '12px'
+                }
+            },
             title: {
-                text: 'Months',
+                text: 'Month'
             }
         },
         yaxis: {
             title: {
-                text: 'Lot Turns',
+                text: 'Lot Turns'
+            },
+            labels: {
+                formatter: val => val.toFixed(0)
+            }
+        },
+        tooltip: {
+            y: {
+                formatter: val => val.toFixed(2) + ' Lot Turns'
             }
         },
         legend: {
             position: 'top',
-            horizontalAlign: 'center',
+            horizontalAlign: 'center'
         },
         title: {
             text: 'Lot Turn Consumption by BU JP FY',
-            align: 'center',
-        },
-        tooltip: {
-            y: {
-                formatter: function (val) {
-                    return val.toFixed(2) + " Lot Turns";
-                }
-            }
+            align: 'center'
         }
     };
 
-    // Render Chart
     var chart = new ApexCharts(document.querySelector("#lot-turn-chart1"), options);
     chart.render();
 </script>
+
+
+
 {% endblock content %}

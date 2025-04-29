@@ -69,13 +69,13 @@
         function fetchData() {
             let params = new URLSearchParams();
             const selectedJpnfy = document.querySelector(".jpnfy-radio:checked")?.value || "{{ selected_jpnfy }}";
-
+    
             params.append('jpnfy', selectedJpnfy);
-
+    
             document.querySelectorAll(".factory-bu-checkbox:checked").forEach(cb => {
-                params.append('factory_bu', cb.value);  // append each factory_bu separately
+                params.append('factory_bu', cb.value);
             });
-
+    
             fetch("{% url 'department_lot_usage' %}?" + params.toString(), {
                 headers: { "X-Requested-With": "XMLHttpRequest" }
             })
@@ -85,25 +85,28 @@
                 updateCharts(data);
             });
         }
-
-        function updateCharts(data) {
-    renderChart("#cumulative-chart", "Cumulative Lot Turns", "line", data.cumulative_series_lt, data.categories);
-    renderChart("#stacked-bar-chart", "Monthly Lot Turns", "bar", data.monthly_series_lt, data.categories, true);
-
-    renderChart("#cumulative-euv-chart", "Cumulative EUV3400", "line", data.cumulative_series_euv, data.categories);
-    renderChart("#stacked-euv-chart", "Monthly EUV3400", "bar", data.monthly_series_euv, data.categories, true);
-
-    renderChart("#cumulative-exe-chart", "Cumulative EXE5000", "line", data.cumulative_series_exe, data.categories);
-    renderChart("#stacked-exe-chart", "Monthly EXE5000", "bar", data.monthly_series_exe, data.categories, true);
-}
-        function renderChart(selector, title, type, series, categories, stacked = false) {
-            if (charts[selector]) charts[selector].destroy();
     
-            const options = {
+        function updateCharts(data) {
+            renderChart("#cumulative-chart", "Cumulative Lot Turns", "line", data.cumulative_series_lt, data.categories, data.groups);
+            renderChart("#stacked-bar-chart", "Monthly Lot Turns", "bar", data.monthly_series_lt, data.categories, data.groups, true);
+    
+            renderChart("#cumulative-euv-chart", "Cumulative EUV 3400", "line", data.cumulative_series_euv, data.categories, data.groups);
+            renderChart("#stacked-euv-chart", "Monthly EUV 3400", "bar", data.monthly_series_euv, data.categories, data.groups, true);
+    
+            renderChart("#cumulative-exe-chart", "Cumulative EXE 5000", "line", data.cumulative_series_exe, data.categories, data.groups);
+            renderChart("#stacked-exe-chart", "Monthly EXE 5000", "bar", data.monthly_series_exe, data.categories, data.groups, true);
+        }
+    
+        function renderChart(selector, title, type, series, categories, groups = [], stacked = false) {
+            if (charts[selector]) {
+                charts[selector].destroy();
+            }
+    
+            charts[selector] = new ApexCharts(document.querySelector(selector), {
                 series: series,
                 chart: {
                     type: type,
-                    height: 400,
+                    height: 500,
                     stacked: stacked,
                     dropShadow: {
                         enabled: true,
@@ -129,28 +132,72 @@
                 },
                 grid: {
                     borderColor: '#e7e7e7',
+                    padding: {
+        top: 20  // <-- Add this to push content down
+    },
                     row: {
                         colors: ['#fafafa', 'transparent'],
                         opacity: 0.5
                     }
                 },
-                xaxis: { categories: categories ,tickPlacement: 'between'},
-                yaxis:{
+                xaxis: {
+                    categories: categories,    // ["Apr", "May", ...]
+                    tickPlacement: 'between',
+                    group: {
+                        style: {
+                            fontSize: '12px',
+                            fontWeight: 600
+                        },
+                        groups: groups  // [{ title: '2023', cols: 9 }, { title: '2024', cols: 3 }]
+                    },
+                    labels: {
+                        rotate: -45
+                    }
+                },
+                yaxis: {
                     labels: {
                         formatter: function (val) {
                             return val.toFixed(0);
                         }
                     }
                 },
-                title: { text: title, align: "center" },
+                title: {
+                    text: title,
+                    align: "center"
+                },
                 tooltip: {
                     shared: true,
-                    intersect: false
+                    intersect: false,
+                    y: {
+                        formatter: function (val) {
+                            return val.toFixed(2);
+                        }
+                    }
                 },
-                legend: { position: "top" }
-            };
-    
-            charts[selector] = new ApexCharts(document.querySelector(selector), options);
+                dataLabels: {
+    enabled: false
+},
+plotOptions: {
+    bar: {
+        horizontal: false,
+        columnWidth: '60%',
+        dataLabels: {
+            total: {
+                enabled: true,
+                offsetY: -10,
+                style: {
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#000'
+                }
+            }
+        }
+    }
+},
+                legend: {
+                    position: "top"
+                }
+            });
             charts[selector].render();
         }
     
@@ -162,8 +209,10 @@
         checkboxes.forEach(cb => cb.addEventListener("change", fetchData));
         jpnfyRadios.forEach(rb => rb.addEventListener("change", fetchData));
     
+        // First fetch immediately
         fetchData();
     });
     </script>
+    
     
 {% endblock %}

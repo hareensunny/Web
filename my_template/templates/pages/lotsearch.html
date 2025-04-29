@@ -6,16 +6,18 @@
 {% endblock title %}
 
 {% block content %}
-<div class="container-fluid mt-5">
+<div class="container-fluid mt-3">
 
     <!-- Search Form -->
     <div class="row">
-        <div class="col-md-3">
-            <div class="card mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card radius-10 h-100">
                 <div class="card-body">
-                    <h4 class="card-title">Search Lot</h4>
+                    
                     <form method="get" action="{% url 'search_lot' %}">
+                        <label for="lot_id" class="form-label">seach lot</label>
                         <div class="input-group">
+                            
                             <input type="text" name="lot_id" class="form-control" placeholder="Search Lot ID" value="{{ request.GET.lot_id }}">
                             <button class="btn btn-primary" type="submit">
                                 <i class="bi bi-search"></i> 
@@ -25,10 +27,7 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Conditional Content -->
-    {% if combined_data %}
+        {% if combined_data %}
         {% include 'partials/lot_search_data_blocks.html' %}
         
         <!-- Charts -->
@@ -138,6 +137,10 @@
     {% else %}
         {% include 'partials/lot_search_blocks.html' %}
     {% endif %}
+    </div>
+
+    <!-- Conditional Content -->
+    
 
 </div>
 {% endblock content %}

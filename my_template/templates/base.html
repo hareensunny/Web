@@ -51,7 +51,7 @@
         <div class="container-fluid mx-auto">
             <!-- Logo -->
             <a class="navbar-brand d-flex ge-2 align-items-center" href="{% url 'home' %}">
-                <img src="{% static 'images/logo.gif' %}" alt="Logo" style="height: 50px;">
+                <img src="{% static 'images/logo.gif' %}" alt="Logo"  id="logo">
                 <h4 class="text-primary text-center mb-0">TEE WAFER SERVICE</h4>
             </a>
             
@@ -189,6 +189,14 @@
   <script>
      new PerfectScrollbar(".best-product")
      new PerfectScrollbar(".top-sellers-list")
+  </script>
+  <script>
+    const logo = document.getElementById('logo');
+    const gifDuration = 2700; // Duration in milliseconds
+
+    setTimeout(() => {
+      logo.style.transform = 'scale(1.5)';
+    }, gifDuration);
   </script>
   </div>
   

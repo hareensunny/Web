@@ -423,7 +423,7 @@ def edit_active_form_data(request, pk):
     return render(request, 'pages/edit_active_lots.html', {'form_data': form_data, 'locations': Location.objects.all()})
 
 def completed_form_data_view(request):
-    completed_form_data = CompletedForm_Data.objects.all()
+    completed_form_data = CompletedForm_Data.objects.order_by('-id') 
 
     # Get unique factories
     factories = CompletedForm_Data.objects.values_list('factory__name', flat=True).distinct()
@@ -514,122 +514,120 @@ def completed_lots_data(request):
     })
 
 
+from django.http import Http404
+from django.shortcuts import render
+from .models import Lot, ActiveForm_Data, CompletedForm_Data, upload_data
+
 def search_lot(request):
-    combined_data = None  # Initialize the combined data variable
-    lot_id = request.GET.get('lot_id')  # Get the lot ID from the request
+    combined_data = None
+    lot_id = request.GET.get('lot_id')
 
     if lot_id:
         lot = None
         status = None
 
         try:
-            # Attempt to find the lot in Lot model
+            # Try to find in Lot (waiting)
             lot = Lot.objects.get(tmp_lot_id=lot_id)
             status = 'waiting'
         except Lot.DoesNotExist:
-            # If not found in Lot, try ActiveForm_Data
             try:
+                # Try to find in ActiveForm_Data (active)
                 lot = ActiveForm_Data.objects.get(tmp_lot_id=lot_id)
                 status = 'active'
             except ActiveForm_Data.DoesNotExist:
-                # If not found in ActiveForm_Data, try CompletedForm_Data
                 try:
+                    # Try to find in CompletedForm_Data (completed)
                     lot = CompletedForm_Data.objects.get(tmp_lot_id=lot_id)
                     status = 'completed'
                 except CompletedForm_Data.DoesNotExist:
-                    # If not found in any, raise a 404 error
                     raise Http404("Lot not found")
-                    
-        
 
-        # Now search for additional information in the upload_data model
+        # Fetch Upload Data
         upload_data_info = upload_data.objects.filter(tmp_lot_id=lot_id)
-        
 
+        # Initialize Variables
         years = []
         lot_turns_series = []
         EUV_3400_series = []
         EXE_5000_series = []
-        # Initialize variables for summation
         total_lot_turns = 0.0
         total_EUV_3400 = 0.0
         EUV_3300 = None
         jpn_ytd = None
         year = None
+        total_flow = 0.0
+        TPA = None
+        ETA = None
+        redline = None
+        dict_value = None
 
-        # Sum the lot_turns and EUV_3400 for all records with the same tmp_lot_id
         if upload_data_info.exists():
-            
-            # lot_turns_tuple = tuple(item.lot_turns for item in upload_data_info)
-            # EUV_3400_tuple = tuple(item.EUV_3400 for item in upload_data_info)
-
-            # # Now you can sum them or process them as needed
-            # total_lot_turns = sum(lot_turns_tuple)
-            # total_EUV_3400 = sum(EUV_3400_tuple)
-            
             for item in upload_data_info:
                 years.append(int(item.year))
                 lot_turns_series.append(float(item.lot_turns))
                 EUV_3400_series.append(float(item.EUV_3400))
                 EXE_5000_series.append(float(item.EXE_5000))
-                total_flow = 0.0
                 total_lot_turns += float(item.lot_turns)
                 total_EUV_3400 += float(item.EUV_3400)
 
-            # Extracting the first instance for the non-summable fields
+            # Static Fields from First Upload Record
             first_item = upload_data_info.first()
             EUV_3300 = first_item.EUV_3300
             jpn_ytd = first_item.jpn_ytd
             year = first_item.year
 
-            # Debugging: Print the totals to the console
-            total_flow = sum([
-                getattr(lot, 'metrology', 0.0),
-                getattr(lot, 'other', 0.0),
-                getattr(lot, 'duplo', 0.0),
-                getattr(lot, 'development', 0.0),
-            ])
-        
-            
+            # Start and End Dates for TPA, ETA Calculations
             startdate = getattr(lot, 'created_at', None)
             enddate = getattr(lot, 'end_date', None)
             eedate = getattr(lot, 'estimated_end_date', None)
-            TPA = None
 
-            if startdate and enddate:
-                date_diff = enddate - startdate
-                eta = eedate - startdate
-                TPA = date_diff.days
-                ETA = eta.days
-                redline = TPA * 0.9
-                dict = ETA/5
+            if startdate and enddate and eedate:
+                try:
+                    date_diff = enddate - startdate
+                    eta_diff = eedate - startdate
+                    TPA = date_diff.days
+                    ETA = eta_diff.days
+                    redline = TPA * 0.9
+                    dict_value = ETA / 5
+                except Exception:
+                    TPA = ETA = redline = dict_value = None
 
+            # Total Flow Calculation (only if lot has fields)
+            try:
+                total_flow = sum([
+                    getattr(lot, 'metrology', 0.0),
+                    getattr(lot, 'other', 0.0),
+                    getattr(lot, 'duplo', 0.0),
+                    getattr(lot, 'development', 0.0),
+                ])
+            except Exception:
+                total_flow = 0.0
 
-
-        # Combine the lot data with the upload data and extracted details
+        # Combine all data into dictionary
         combined_data = {
-            'lot': lot,  # Store the lot object directly
+            'lot': lot,
             'status': status,
-            'tmp_lot_id': lot.tmp_lot_id,  # Assuming tmp_lot_id is in all lot models
-            'total_lot_turns': total_lot_turns,  # Sum of lot_turns for this tmp_lot_id
+            'tmp_lot_id': lot.tmp_lot_id,
+            'total_lot_turns': total_lot_turns,
             'EUV_3300': EUV_3300,
             'total_EUV_3400': total_EUV_3400,
             'jpn_ytd': jpn_ytd,
             'year': year,
             'total_flow': total_flow,
-            'years': years,  # List of years for the chart
-            'lot_turns_series': lot_turns_series,  # Data for the lot_turns series
-            'EUV_3400_series': EUV_3400_series,  # Data for the EUV_3400 series
-            'EXE_5000_series': EXE_5000_series,  # Data for the EUV_3400 series
+            'years': years,
+            'lot_turns_series': lot_turns_series,
+            'EUV_3400_series': EUV_3400_series,
+            'EXE_5000_series': EXE_5000_series,
             'TPA': TPA,
             'ETA': ETA,
-            'redline':redline,
-            'dict':dict
+            'redline': redline,
+            'dict': dict_value,
         }
 
         return render(request, 'pages/lotsearch.html', {'combined_data': combined_data})
 
-    # If no lot_id is provided, or if no lot is found
+    # If no lot_id entered yet
     return render(request, 'pages/lotsearch.html')
 
 def dictify(d):
@@ -1739,23 +1737,12 @@ def CURRENT_FY(request):
     })
 
 def department_lot_usage(request):
-    from collections import defaultdict
-    from django.db.models import Sum, Q
-    from django.template.loader import render_to_string
-    from django.http import JsonResponse
-    import json
-
-    # Fetch Factory + BU combinations
-    unique_factory_bu = (
-        upload_data.objects.values_list("factory__name", "bu__name")
-        .distinct()
-        .order_by("factory__name", "bu__name")
-    )
     factory_bu_choices = [
-        f"{factory} - {bu}" for factory, bu in unique_factory_bu if factory and bu
+        f"{f} - {b}"
+        for f, b in upload_data.objects.values_list("factory__name", "bu__name").distinct().order_by("factory__name", "bu__name")
+        if f and b
     ]
 
-    # Fetch distinct JPN_FY values and set the highest as default
     jpnfy_choices = (
         upload_data.objects.values_list("jpn_ytd", flat=True).distinct().order_by("-jpn_ytd")
     )
@@ -1763,22 +1750,20 @@ def department_lot_usage(request):
     selected_jpnfy = request.GET.get("jpnfy", highest_jpnfy)
 
     selected_factory_bu = request.GET.getlist("factory_bu")
-
     if not selected_factory_bu:
         selected_factory_bu = factory_bu_choices
-    query = upload_data.objects.filter(jpn_ytd=selected_jpnfy)
 
+    query = upload_data.objects.filter(jpn_ytd=selected_jpnfy)
     if selected_factory_bu:
         q_objects = Q()
-        for factory_bu in selected_factory_bu:
+        for fb in selected_factory_bu:
             try:
-                factory, bu = factory_bu.split(" - ")
+                factory, bu = fb.split(" - ")
                 q_objects |= Q(factory__name=factory, bu__name=bu)
             except ValueError:
                 continue
         query = query.filter(q_objects)
 
-    # Aggregate data by department
     monthly_data = (
         query.values("year", "month", "department__name")
         .annotate(
@@ -1789,61 +1774,54 @@ def department_lot_usage(request):
         .order_by("year", "month", "department__name")
     )
 
-    # Initialize tables and totals
     table_data = defaultdict(lambda: defaultdict(lambda: {"lot_turns": 0.0, "euv_3400": 0.0, "exe_5000": 0.0}))
     department_totals = defaultdict(lambda: {"lot_turns": 0.0, "euv_3400": 0.0, "exe_5000": 0.0})
     month_totals = defaultdict(lambda: {"lot_turns": 0.0, "euv_3400": 0.0, "exe_5000": 0.0})
     grand_totals = {"lot_turns": 0.0, "euv_3400": 0.0, "exe_5000": 0.0}
 
-    months_list = set()
+    months_set = set()
     departments_set = set()
 
     for row in monthly_data:
-        month_name = f"{row['month']}-{row['year']}"
+        month_str = f"{str(row['month']).zfill(2)}-{row['year']}"
         dept_name = row["department__name"]
 
-        months_list.add(month_name)
+        table_data[month_str][dept_name] = {
+            "lot_turns": round(row["total_lot_turns"] or 0, 2),
+            "euv_3400": round(row["total_euv_3400"] or 0, 2),
+            "exe_5000": round(row["total_exe_5000"] or 0, 2),
+        }
+
+        department_totals[dept_name]["lot_turns"] += row["total_lot_turns"] or 0
+        department_totals[dept_name]["euv_3400"] += row["total_euv_3400"] or 0
+        department_totals[dept_name]["exe_5000"] += row["total_exe_5000"] or 0
+
+        month_totals[month_str]["lot_turns"] += row["total_lot_turns"] or 0
+        month_totals[month_str]["euv_3400"] += row["total_euv_3400"] or 0
+        month_totals[month_str]["exe_5000"] += row["total_exe_5000"] or 0
+
+        grand_totals["lot_turns"] += row["total_lot_turns"] or 0
+        grand_totals["euv_3400"] += row["total_euv_3400"] or 0
+        grand_totals["exe_5000"] += row["total_exe_5000"] or 0
+
+        months_set.add(month_str)
         departments_set.add(dept_name)
 
-        lt = round(row["total_lot_turns"] or 0, 2)
-        euv = round(row["total_euv_3400"] or 0, 2)
-        exe = round(row["total_exe_5000"] or 0, 2)
-
-        table_data[month_name][dept_name] = {"lot_turns": lt, "euv_3400": euv, "exe_5000": exe}
-
-        department_totals[dept_name]["lot_turns"] += lt
-        department_totals[dept_name]["euv_3400"] += euv
-        department_totals[dept_name]["exe_5000"] += exe
-
-        month_totals[month_name]["lot_turns"] += lt
-        month_totals[month_name]["euv_3400"] += euv
-        month_totals[month_name]["exe_5000"] += exe
-
-        grand_totals["lot_turns"] += lt
-        grand_totals["euv_3400"] += euv
-        grand_totals["exe_5000"] += exe
-
-    for month in months_list:
-        for dept in departments_set:
-            if dept not in table_data[month]:
-                table_data[month][dept] = {"lot_turns": 0.00, "euv_3400": 0.00, "exe_5000": 0.00}
-
-    categories = sorted(list(months_list))
+    months_sorted = sorted(months_set, key=lambda x: datetime.strptime(x, "%m-%Y"))
     departments = sorted(departments_set)
 
-    # Prepare chart series
-    def build_series(key):
+    def build_series(metric_key):
         cumulative_series = []
         monthly_series = []
         for dept in departments:
             cumulative = []
             monthly = []
             total = 0
-            for month in categories:
-                val = table_data[month][dept][key]
+            for month in months_sorted:
+                val = table_data[month][dept][metric_key]
                 total += val
-                monthly.append(val)
-                cumulative.append(total)
+                cumulative.append(round(total, 2))
+                monthly.append(round(val, 2))
             cumulative_series.append({"name": dept, "data": cumulative})
             monthly_series.append({"name": dept, "data": monthly})
         return cumulative_series, monthly_series
@@ -1852,6 +1830,26 @@ def department_lot_usage(request):
     cumulative_euv, monthly_euv = build_series("euv_3400")
     cumulative_exe, monthly_exe = build_series("exe_5000")
 
+    month_labels = []
+    year_groups = []
+    current_year = None
+    group = {"title": "", "cols": 0}
+
+    for entry in months_sorted:
+        dt = datetime.strptime(entry, "%m-%Y")
+        month_labels.append(dt.strftime("%b"))
+        year = dt.strftime("%Y")
+        if year != current_year:
+            if group["cols"] > 0:
+                year_groups.append(group)
+            group = {"title": year, "cols": 1}
+            current_year = year
+        else:
+            group["cols"] += 1
+
+    if group["cols"] > 0:
+        year_groups.append(group)
+
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         table_html = render_to_string("partials/department_table.html", {
             "table_data": dict(table_data),
@@ -1859,11 +1857,12 @@ def department_lot_usage(request):
             "month_totals": dict(month_totals),
             "department_totals": dict(department_totals),
             "grand_total": grand_totals,
-            "metrics": ["lot_turns", "euv_3400", "exe_5000"],  # ✅ Add this
+            "metrics": ["lot_turns", "euv_3400", "exe_5000"],
         })
         return JsonResponse({
             "table_html": table_html,
-            "categories": categories,
+            "categories": month_labels,
+            "groups": year_groups,
             "cumulative_series_lt": cumulative_lt,
             "monthly_series_lt": monthly_lt,
             "cumulative_series_euv": cumulative_euv,
@@ -1874,10 +1873,11 @@ def department_lot_usage(request):
 
     return render(request, "pages/department_lot_usage.html", {
         "factory_bu_choices": factory_bu_choices,
-        "selected_factory_bu": [],
+        "selected_factory_bu": selected_factory_bu,
         "jpnfy_choices": jpnfy_choices,
-       "selected_jpnfy": selected_jpnfy,
-        "categories": json.dumps(categories),
+        "selected_jpnfy": selected_jpnfy,
+        "categories": json.dumps(month_labels),
+        "groups": json.dumps(year_groups),
         "departments": departments,
         "cumulative_series_lt": json.dumps(cumulative_lt),
         "monthly_series_lt": json.dumps(monthly_lt),
@@ -1885,13 +1885,11 @@ def department_lot_usage(request):
         "monthly_series_euv": json.dumps(monthly_euv),
         "cumulative_series_exe": json.dumps(cumulative_exe),
         "monthly_series_exe": json.dumps(monthly_exe),
-        "table_data": dict(table_data),
-        "department_totals": dict(department_totals),
         "month_totals": dict(month_totals),
+        "department_totals": dict(department_totals),
         "grand_total": grand_totals,
-         "metrics": ["lot_ turns", "euv_3400", "exe_5000"],  # ✅ Add this
+        "metrics": ["lot_turns", "euv_3400", "exe_5000"],
     })
-
 from collections import defaultdict
 from django.shortcuts import render
 from django.db.models import Sum

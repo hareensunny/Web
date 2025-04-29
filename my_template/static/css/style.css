@@ -1732,10 +1732,7 @@ a {
 	background-color:#00a9e0;
 
   }
-  .ct:nth-child(1) .ct2 h4{
-	color:#000 ;
-
-  }
+  
   .ct:nth-child(2) .ct2{
 	background-color:#da1884 ;
 
@@ -1933,4 +1930,11 @@ table.dataTable .edit-action a:hover {
   }
   .dropdown-menu[data-bs-popper]{
 	right:0 !important;
+  }
+  #logo {
+	width: 200px;
+	transition: transform 0.5s ease;
+  }
+  .form-check-label{
+	font-size:12px !important
   }

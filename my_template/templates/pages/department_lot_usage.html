@@ -5,7 +5,8 @@
 {% endblock title %}
 
 {% block content %}
-<div class="container-fluid mt-2">
+<div class="container-fluid">
+    <h2 class="text-center mb-3">Factory Trends</h2>
     <!-- Filters -->
     <div class="row">
         <div class="col-md-1">
@@ -157,7 +158,7 @@
                 yaxis: {
                     labels: {
                         formatter: function (val) {
-                            return val.toFixed(0);
+                            return val.toFixed(2);
                         }
                     }
                 },
@@ -170,7 +171,7 @@
                     intersect: false,
                     y: {
                         formatter: function (val) {
-                            return val.toFixed(2);
+                            return val !== undefined ? val.toFixed(2) : '';
                         }
                     }
                 },
@@ -189,6 +190,9 @@ plotOptions: {
                     fontSize: '14px',
                     fontWeight: 600,
                     color: '#000'
+                },
+            formatter: function (val) {
+                    return val.toFixed(2);  // <-- Format total labels too
                 }
             }
         }

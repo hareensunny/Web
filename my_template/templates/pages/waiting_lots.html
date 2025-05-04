@@ -66,7 +66,17 @@
                 <tr data-factory="{{ data.factory.name }}">
                     <td class="bg-s"><a href="{% url 'edit_form_data' data.pk %}">Edit</a></td>
                     <td class="col-tmplotid">{{ data.tmp_lot_id }}</td>
-                    <td class="col-url">{{data.url}}</td>
+                    <td class="col-url">
+                        {% if data.url %}
+                          {% if data.url|slice:":4" == "http" or data.url|slice:":1" == "/" or ".pdf" in data.url or ".doc" in data.url or ".jpg" in data.url %}
+                            <a href="{{ data.url }}" target="_blank">Open Link</a>
+                          {% else %}
+                            {{ data.url }}
+                          {% endif %}
+                        {% else %}
+                          -
+                        {% endif %}
+                      </td>
                     <td class="col-wbs">{{ data.wbs.name }}</td>
                     <td class="col-projectgroup">{{ data.project_group.name }}</td>
                     <td class="col-factory">{{ data.factory.name }}</td>

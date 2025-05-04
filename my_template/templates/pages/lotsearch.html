@@ -13,134 +13,224 @@
         <div class="col-md-3 mb-3">
             <div class="card radius-10 h-100">
                 <div class="card-body">
-                    
                     <form method="get" action="{% url 'search_lot' %}">
-                        <label for="lot_id" class="form-label">seach lot</label>
+                        <label for="lot_id" class="form-label">Search Lot</label>
                         <div class="input-group">
-                            
                             <input type="text" name="lot_id" class="form-control" placeholder="Search Lot ID" value="{{ request.GET.lot_id }}">
                             <button class="btn btn-primary" type="submit">
-                                <i class="bi bi-search"></i> 
+                                <i class="bi bi-search"></i>
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+
         {% if combined_data %}
-        {% include 'partials/lot_search_data_blocks.html' %}
-        
-        <!-- Charts -->
-        <div class="row">
-            <div class="col-12 col-lg-6 col-xl-6 d-flex">
-                <div class="card radius-10 w-100">
-                    <div class="card-body">
-                        <h5 class="mb-0">Lot Turns & EUV_3400 Usage</h5>
-                        <div id="lot-chart"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-lg-6 col-xl-6 d-flex">
-                <div class="card radius-10 w-100">
-                    <div class="card-body">
-                        <h5 class="mb-0">Processing Days Vs ETA</h5>
-                        <div id="myDiv"></div>
-                    </div>
+            {% include 'partials/lot_search_data_blocks.html' %}
+        {% endif %}
+    </div>
+
+    {% if combined_data %}
+    <!-- Charts -->
+    <div class="row">
+        <!-- Bar Chart -->
+        <div class="col-12 col-lg-6 col-xl-6 d-flex mt-3">
+            <div class="card radius-10 w-100">
+                <div class="card-body">
+                    <h5 class="mb-0">Lot Turns, EUV 3400 & EXE 5000 Usage</h5>
+                    <div id="lot-chart"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Apex Chart Script --><script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+        <!-- Gauge Chart -->
+        <div class="col-12 col-lg-6 col-xl-6 d-flex mt-3">
+            <div class="card radius-10 w-100">
+                <div class="card-body">
+                    <h5 class="mb-0">Processing Days vs ETA</h5>
+                    <div id="myDiv"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var chartOptions = {
-                series: [
-                    { name: 'Lot Turns', data: {{ combined_data.lot_turns_series|safe }} },
-                    { name: 'EUV 3400', data: {{ combined_data.EUV_3400_series|safe }} },
-                    { name: 'EXE 5000', data: {{ combined_data.EXE_5000_series|safe }} }
-                ],
-                chart: {
-                    type: 'bar',
-                    height: 280,
-                    toolbar: { show: false },
-                    zoom: { enabled: false }
-                },
-                colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
-                plotOptions: {
-                    bar: {
-                        horizontal: false,
-                        columnWidth: '50%',
-                        endingShape: 'rounded'
-                    }
-                },
-                dataLabels: { enabled: false },
-                stroke: {
-                    show: true,
-                    width: 2,
-                    colors: ['transparent']
-                },
-                xaxis: {
-                    categories: {{ combined_data.years|safe }},
-                    title: { text: 'Year' }
-                },
-                yaxis: {
-                    title: { text: 'Values' }
-                },
-                fill: {
-                    type: 'gradient',
-                    gradient: {
-                        shade: 'light',
-                        type: 'vertical',
-                        shadeIntensity: 0.5,
-                        Colors: ["#00a9e0", "#da1884", "#78be20", "#F1C40F", "#9B59B6"],
-                        opacityFrom: 1,
-                        opacityTo: 1
-                    }
-                },
-                tooltip: {
-                    y: {
-                        formatter: function (val) {
-                            return val + " units";
-                        }
-                    }
+    <!-- ApexCharts Script -->
+<!-- ApexCharts Script -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var chartOptions = {
+        series: [
+            { name: 'Lot Turns', data: {{ combined_data.lot_turns_series|safe }} },
+            { name: 'EUV 3400', data: {{ combined_data.EUV_3400_series|safe }} },
+            { name: 'EXE 5000', data: {{ combined_data.EXE_5000_series|safe }} }
+        ],
+        chart: {
+            type: 'bar',
+            height: 350,
+            toolbar: { show: false },
+            zoom: { enabled: false }
+        },
+        colors: ["#00a9e0", "#da1884", "#78be20"],
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: '50%',
+                endingShape: 'rounded'
+            }
+        },
+        dataLabels: {
+            enabled: true,
+            formatter: function (val) {
+                return typeof val === "number" ? val.toFixed(2) : "";
+            },
+            style: {
+                fontSize: '12px'
+            }
+        },
+        stroke: {
+            show: true,
+            width: 2,
+            colors: ['transparent']
+        },
+        xaxis: {
+            categories: {{ combined_data.month_labels|safe }},
+            title: {
+                text: 'Month',
+                style: {
+                    fontSize: '14px',
+                    fontWeight: 'bold'
                 }
-            };
+            },
+            labels: {
+                rotate: -45,
+                style: { fontSize: '11px' }
+            }
+        },
+        yaxis: {
+            title: { text: 'Values' },
+            labels: {
+                formatter: function (val) {
+                    return typeof val === "number" ? val.toFixed(2) : "";
+                }
+            }
+        },
+        tooltip: {
+            shared: true,
+            intersect: false,
+            y: {
+                formatter: function (val) {
+                    return typeof val === "number" ? val.toFixed(2) + " units" : "";
+                }
+            }
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shade: 'light',
+                type: 'vertical',
+                shadeIntensity: 0.5,
+                colors: ["#00a9e0", "#da1884", "#78be20"],
+                opacityFrom: 1,
+                opacityTo: 1
+            }
+        },
+        legend: {
+            position: 'top',
+            horizontalAlign: 'center'
+        }
+    };
 
-            var chart = new ApexCharts(document.querySelector("#lot-chart"), chartOptions);
-            chart.render();
-        });
-        </script>
+    var chart = new ApexCharts(document.querySelector("#lot-chart"), chartOptions);
+    chart.render();
+});
+</script>
 
-        <!-- Plotly Gauge Chart -->
-        <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
-        <script>
+
+    <!-- Plotly Gauge Chart -->
+    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+    <script>
+        var eta = {{ combined_data.ETA|default:0 }};
+        var tpa = {{ combined_data.TPA|default:0 }};
+        var redline = {{ combined_data.redline|default:0 }};
+        var dtick = {{ combined_data.dict|default:5 }};
+        var deltaValue = tpa - eta;
+    
+        // Tick values (0, 5, 10, ...)
+        var tickVals = [], tickTexts = [];
+        for (var i = 0; i <= eta; i += dtick) {
+            tickVals.push(i);
+            tickTexts.push(i.toString());
+        }
+    
         var data = [{
-            domain: { x: [0, 10], y: [0, 10] },
-            value: {{ combined_data.TPA }},
             type: "indicator",
             mode: "gauge+number+delta",
-            delta: { reference: {{ combined_data.ETA }} },
+            value: tpa,
+            title: {
+                text: "Processing Days vs ETA",
+                font: { size: 28 }
+            },
+            delta: {
+                reference: eta,
+                increasing: { color: "red" },
+                decreasing: { color: "green" },
+                font: { size: 14 }
+            },
             gauge: {
-                axis: { range: [null, {{ combined_data.ETA }}], tick0: 5, dtick: {{ combined_data.dict }} },
+                shape: "angular",
+                
+                axis: {
+                    range: [0, eta],
+                    tickmode: "array",
+                    tickvals: tickVals,
+                    ticktext: tickTexts,
+                    tickwidth: 2,
+                    tickcolor: "#000",
+                    tickfont: { size: 24 },
+                    showticklabels: true  // ✅ Forces label visibility
+                },
+                bar: { color: "#00a9e0" },
                 threshold: {
                     line: { color: "red", width: 4 },
                     thickness: 0.75,
-                    value: {{ combined_data.redline }}
+                    value: redline
                 }
-            }
+            },
+            domain: { x: [0, 1], y: [0, 1] }
         }];
-        var layout = { height: 350, margin: { t: 0, b: 0 } };
-        Plotly.newPlot('myDiv', data, layout);
-        </script>
+    
+        var layout = {
+            height: 280,
+            margin: { t: 0, b: 0, l: 0, r: 0 },  // 👈 more bottom margin
+        };
+    
+        Plotly.newPlot('myDiv', data, layout).then(() => {
+            const labelDiv = document.createElement("div");
+            labelDiv.style.textAlign = "center";
+            labelDiv.style.fontSize = "16px";
+            labelDiv.style.fontWeight = "bold";
+            labelDiv.style.marginTop = "10px";
+    
+            if (deltaValue < 0) {
+                labelDiv.style.color = "green";
+                labelDiv.textContent = `${Math.abs(deltaValue)} days ahead of ETA`;
+            } else if (deltaValue > 0) {
+                labelDiv.style.color = "red";
+                labelDiv.textContent = `${deltaValue} days behind ETA`;
+            } else {
+                labelDiv.style.color = "blue";
+                labelDiv.textContent = `On target`;
+            }
+    
+            document.getElementById("myDiv").appendChild(labelDiv);
+        });
+    </script>
 
     {% else %}
         {% include 'partials/lot_search_blocks.html' %}
     {% endif %}
-    </div>
-
-    <!-- Conditional Content -->
-    
 
 </div>
 {% endblock content %}

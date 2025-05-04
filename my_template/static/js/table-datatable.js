@@ -54,7 +54,25 @@ $(function() {
             },
             columns: [
                 { data: 'tmp_lot_id', className: 'col-tmplotid ' },
-                { data: 'url', className: 'col-url' },
+                {
+                    data: 'url',
+                    className: 'col-url',
+                    render: function(data, type, row) {
+                        if (!data) return '';
+                
+                        // Check if data is a valid URL or relative path
+                        const isFullUrl = data.startsWith('http://') || data.startsWith('https://');
+                        const isRelativePath = data.startsWith('/') || data.startsWith('media/') || data.includes('.pdf') || data.includes('.doc') || data.includes('.jpg');
+                
+                        if (isFullUrl || isRelativePath) {
+                            return `<a href="${data}" target="_blank">Open Link</a>`;
+                        }
+                
+                        // If not linkable, just return as text
+                        return data;
+                    }
+                },
+                
                 { data: 'wbs', className: 'col-wbs' },
                 { data: 'project_group', className: 'col-projectgroup' },
                 { data: 'factory', className: 'col-factory' },

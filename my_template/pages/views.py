@@ -518,6 +518,16 @@ from django.http import Http404
 from django.shortcuts import render
 from .models import Lot, ActiveForm_Data, CompletedForm_Data, upload_data
 
+from django.shortcuts import render
+from django.http import Http404
+from calendar import month_name
+from .models import Lot, ActiveForm_Data, CompletedForm_Data, upload_data
+
+from django.shortcuts import render
+from django.http import Http404
+from calendar import month_name
+from .models import Lot, ActiveForm_Data, CompletedForm_Data, upload_data
+
 def search_lot(request):
     combined_data = None
     lot_id = request.GET.get('lot_id')
@@ -526,28 +536,26 @@ def search_lot(request):
         lot = None
         status = None
 
+        # Try to locate the lot in waiting → active → completed
         try:
-            # Try to find in Lot (waiting)
             lot = Lot.objects.get(tmp_lot_id=lot_id)
             status = 'waiting'
         except Lot.DoesNotExist:
             try:
-                # Try to find in ActiveForm_Data (active)
                 lot = ActiveForm_Data.objects.get(tmp_lot_id=lot_id)
                 status = 'active'
             except ActiveForm_Data.DoesNotExist:
                 try:
-                    # Try to find in CompletedForm_Data (completed)
                     lot = CompletedForm_Data.objects.get(tmp_lot_id=lot_id)
                     status = 'completed'
                 except CompletedForm_Data.DoesNotExist:
                     raise Http404("Lot not found")
 
-        # Fetch Upload Data
-        upload_data_info = upload_data.objects.filter(tmp_lot_id=lot_id)
+        # Fetch upload data ordered by year, month
+        upload_data_info = upload_data.objects.filter(tmp_lot_id=lot_id).order_by('year', 'month')
 
-        # Initialize Variables
-        years = []
+        # Initialize fields
+        month_labels = []
         lot_turns_series = []
         EUV_3400_series = []
         EXE_5000_series = []
@@ -564,58 +572,63 @@ def search_lot(request):
 
         if upload_data_info.exists():
             for item in upload_data_info:
-                years.append(int(item.year))
-                lot_turns_series.append(float(item.lot_turns))
-                EUV_3400_series.append(float(item.EUV_3400))
-                EXE_5000_series.append(float(item.EXE_5000))
-                total_lot_turns += float(item.lot_turns)
-                total_EUV_3400 += float(item.EUV_3400)
+                try:
+                    month_num = int(item.month)
+                    if 1 <= month_num <= 12:
+                        label = f"{month_name[month_num][:3]} {item.year}"
+                        month_labels.append(label)
 
-            # Static Fields from First Upload Record
+                        lot_turns_series.append(round(float(item.lot_turns or 0), 2))
+                        EUV_3400_series.append(round(float(item.EUV_3400 or 0), 2))
+                        EXE_5000_series.append(round(float(item.EXE_5000 or 0), 2))
+
+                        total_lot_turns += float(item.lot_turns or 0)
+                        total_EUV_3400 += float(item.EUV_3400 or 0)
+                except Exception:
+                    continue
+
+            # Pull static values from the first record
             first_item = upload_data_info.first()
             EUV_3300 = first_item.EUV_3300
             jpn_ytd = first_item.jpn_ytd
             year = first_item.year
 
-            # Start and End Dates for TPA, ETA Calculations
+            # TPA / ETA calculations
             startdate = getattr(lot, 'created_at', None)
             enddate = getattr(lot, 'end_date', None)
             eedate = getattr(lot, 'estimated_end_date', None)
 
             if startdate and enddate and eedate:
                 try:
-                    date_diff = enddate - startdate
-                    eta_diff = eedate - startdate
-                    TPA = date_diff.days
-                    ETA = eta_diff.days
-                    redline = TPA * 0.9
-                    dict_value = ETA / 5
+                    TPA = (enddate - startdate).days
+                    ETA = (eedate - startdate).days
+                    redline = round(TPA * 0.9, 2)
+                    dict_value = round(ETA / 5, 2) if ETA != 0 else 0
                 except Exception:
                     TPA = ETA = redline = dict_value = None
 
-            # Total Flow Calculation (only if lot has fields)
+            # Total flow
             try:
                 total_flow = sum([
-                    getattr(lot, 'metrology', 0.0),
-                    getattr(lot, 'other', 0.0),
-                    getattr(lot, 'duplo', 0.0),
-                    getattr(lot, 'development', 0.0),
+                    float(getattr(lot, 'metrology', 0.0) or 0),
+                    float(getattr(lot, 'other', 0.0) or 0),
+                    float(getattr(lot, 'duplo', 0.0) or 0),
+                    float(getattr(lot, 'development', 0.0) or 0),
                 ])
             except Exception:
                 total_flow = 0.0
 
-        # Combine all data into dictionary
         combined_data = {
             'lot': lot,
             'status': status,
             'tmp_lot_id': lot.tmp_lot_id,
-            'total_lot_turns': total_lot_turns,
+            'total_lot_turns': round(total_lot_turns, 2),
             'EUV_3300': EUV_3300,
-            'total_EUV_3400': total_EUV_3400,
+            'total_EUV_3400': round(total_EUV_3400, 2),
             'jpn_ytd': jpn_ytd,
             'year': year,
-            'total_flow': total_flow,
-            'years': years,
+            'total_flow': round(total_flow, 2),
+            'month_labels': month_labels,
             'lot_turns_series': lot_turns_series,
             'EUV_3400_series': EUV_3400_series,
             'EXE_5000_series': EXE_5000_series,
@@ -627,8 +640,8 @@ def search_lot(request):
 
         return render(request, 'pages/lotsearch.html', {'combined_data': combined_data})
 
-    # If no lot_id entered yet
     return render(request, 'pages/lotsearch.html')
+
 
 def dictify(d):
     """Recursively convert defaultdict to a normal dict."""
